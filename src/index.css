@@ -2,95 +2,172 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&display=swap');
 
+/* Axis Mundi Technologies Design System */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Dark-first design system with tech aesthetics */
+    --background: 223 68% 6%; /* #0a0e27 - Primary Dark */
+    --foreground: 0 0% 100%; /* #ffffff - White text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Card and surface colors */
+    --card: 228 57% 16%; /* #1a1f3a - Dark Grey cards */
+    --card-foreground: 0 0% 100%;
+    --card-secondary: 229 42% 22%; /* #2d3555 - Mid Grey secondary */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    /* Primary blue system */
+    --primary: 212 100% 50%; /* #0080ff - Primary Blue */
+    --primary-foreground: 0 0% 100%;
+    --primary-accent: 190 100% 50%; /* #00d4ff - Accent Blue */
+    --primary-light: 212 100% 90%; /* #e6f3ff - Light Blue */
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Text hierarchy */
+    --text-primary: 0 0% 100%; /* #ffffff - Headers, emphasis */
+    --text-secondary: 221 36% 71%; /* #a8b2d1 - Muted text */
+    --text-body: 218 23% 62%; /* #8892b0 - Body text */
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Interactive states */
+    --border: 212 100% 50%; /* Primary blue borders */
+    --input: 228 57% 16%; /* Dark input backgrounds */
+    --ring: 212 100% 50%; /* Blue focus rings */
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Form and input styling */
+    --muted: 228 57% 16%;
+    --muted-foreground: 221 36% 71%;
+    --accent: 190 100% 50%;
+    --accent-foreground: 0 0% 100%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Gradients and effects */
+    --gradient-primary: linear-gradient(135deg, hsl(212 100% 50%), hsl(190 100% 50%));
+    --gradient-dark: linear-gradient(180deg, hsl(223 68% 6%), hsl(228 57% 16%));
+    --shadow-blue: 0 10px 30px -10px hsl(212 100% 50% / 0.3);
+    --shadow-glow: 0 0 40px hsl(190 100% 50% / 0.4);
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Animation and transition */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.2s ease-out;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Tech grid pattern */
+    --grid-opacity: 0.03;
+    
+    /* No radius for sharp, minimal design */
+    --radius: 0px;
+  }
+}
 
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+@layer base {
+  * {
+    @apply border-border;
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+  body {
+    @apply bg-background text-foreground font-inter;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    letter-spacing: 0.3px;
+  }
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+  /* Typography scale */
+  h1 {
+    @apply text-6xl md:text-7xl font-extralight tracking-wider text-text-primary;
+    line-height: 1.1;
+  }
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+  h2 {
+    @apply text-3xl md:text-4xl font-extralight tracking-wide text-text-primary;
+    line-height: 1.2;
+  }
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+  h3 {
+    @apply text-xl font-light tracking-wider text-text-primary;
+    line-height: 1.3;
+  }
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+  /* Tech grid background pattern */
+  .tech-grid {
+    background-image: 
+      linear-gradient(rgba(0, 128, 255, var(--grid-opacity)) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 128, 255, var(--grid-opacity)) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+  /* Animation utilities */
+  .animate-slide-up {
+    animation: slideUp 0.8s ease-out forwards;
+  }
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+  .animate-slide-in-left {
+    animation: slideInLeft 0.4s ease-out forwards;
+  }
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(50px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInLeft {
+    from {
+      width: 0;
+    }
+    to {
+      width: 100%;
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Hover effects */
+  .hover-lift {
+    transition: var(--transition-smooth);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-blue);
+  }
+
+  .hover-glow {
+    transition: var(--transition-smooth);
+  }
+
+  .hover-glow:hover {
+    box-shadow: var(--shadow-glow);
+    border-color: hsl(var(--primary-accent));
+  }
+
+  /* Blue accent line */
+  .blue-accent-line {
+    position: relative;
+  }
+
+  .blue-accent-line::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 4px;
+    height: 100%;
+    background: hsl(var(--primary));
   }
 }
 
