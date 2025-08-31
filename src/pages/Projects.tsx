@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Cpu, Diamond, Boxes, Network, Square, Triangle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Cpu, Diamond, Network } from "lucide-react";
 
 const Projects = () => {
   const [animateProjects, setAnimateProjects] = useState(false);
@@ -14,45 +15,30 @@ const Projects = () => {
   const projects = [
     {
       icon: Cpu,
-      title: "Neural Processing Platform",
+      title: "Neural Commerce Platform",
       description:
-        "Real-time data analysis system using advanced neural networks for predictive modeling and pattern recognition.",
-      tags: ["TENSORFLOW", "PYTHON", "KUBERNETES"],
+        "AI-powered e-commerce platform processing $2M daily transactions with 99.99% uptime. Deep learning personalization achieving 340% ROI.",
+      tags: ["TENSORFLOW", "REACT", "KUBERNETES"],
+      client: "Fortune 500 Retailer",
+      slug: "neural-commerce-platform",
     },
     {
       icon: Diamond,
-      title: "Quantum Finance Engine",
+      title: "Quantum Finance Dashboard",
       description:
-        "Quantum computing solution for complex financial modeling and risk assessment with millisecond processing.",
-      tags: ["QISKIT", "REACT", "GRAPHQL"],
-    },
-    {
-      icon: Boxes,
-      title: "Distributed Ledger System",
-      description:
-        "Blockchain infrastructure for secure, transparent supply chain management across global networks.",
-      tags: ["ETHEREUM", "SOLIDITY", "IPFS"],
+        "Quantum-classical hybrid system managing $5B in assets with real-time rebalancing. 10,000x faster than traditional methods.",
+      tags: ["QISKIT", "PYTHON", "D3.JS"],
+      client: "Investment Management Firm",
+      slug: "quantum-finance-dashboard",
     },
     {
       icon: Network,
       title: "Smart City Infrastructure",
       description:
-        "IoT ecosystem managing urban resources through real-time data collection and automated response systems.",
-      tags: ["AZURE IOT", "5G", "EDGE AI"],
-    },
-    {
-      icon: Square,
-      title: "Autonomous Systems Platform",
-      description:
-        "Self-healing infrastructure with automated deployment, scaling, and recovery mechanisms.",
-      tags: ["DOCKER", "TERRAFORM", "GITOPS"],
-    },
-    {
-      icon: Triangle,
-      title: "Cybersecurity Matrix",
-      description:
-        "Advanced threat detection system using AI-driven behavioral analysis and zero-trust architecture.",
-      tags: ["SIEM", "ML", "ZERO TRUST"],
+        "IoT ecosystem managing 10,000+ sensors across the city. Reducing traffic congestion by 34% and saving $50M annually.",
+      tags: ["AZURE IOT", "TENSORFLOW", "POWER BI"],
+      client: "Metropolitan Government",
+      slug: "smart-city-infrastructure",
     },
   ];
 
@@ -80,16 +66,16 @@ const Projects = () => {
             }`}
           />
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {projects.map((project, index) => {
               const Icon = project.icon;
-              const rowIndex = Math.floor(index / 3);
-              const delay = rowIndex * 300;
+              const delay = index * 200;
 
               return (
-                <div
+                <Link
                   key={index}
-                  className={`bg-card border border-primary/20 hover-lift hover-glow p-8 transition-all duration-700 ${
+                  to={`/projects/${project.slug}`}
+                  className={`block bg-card border border-primary/20 hover-lift hover-glow p-8 transition-all duration-700 cursor-pointer group ${
                     animateProjects
                       ? "opacity-100 translate-y-0 scale-100"
                       : "opacity-0 translate-y-16 scale-95"
@@ -100,14 +86,15 @@ const Projects = () => {
                 >
                   {/* Icon Area */}
                   <div className="mb-6 h-32 flex items-center justify-center">
-                    <div className="w-20 h-20 border border-primary flex items-center justify-center">
+                    <div className="w-20 h-20 border border-primary flex items-center justify-center group-hover:bg-primary/10 transition-colors">
                       <Icon className="w-8 h-8 text-primary" />
                     </div>
                   </div>
 
                   {/* Content Area */}
                   <div>
-                    <h3 className="mb-4">{project.title}</h3>
+                    <h3 className="mb-2 group-hover:text-primary-accent transition-colors">{project.title}</h3>
+                    <p className="text-sm text-primary mb-4">{project.client}</p>
                     <p className="text-text-secondary mb-6 leading-relaxed">
                       {project.description}
                     </p>
@@ -117,14 +104,14 @@ const Projects = () => {
                       {project.tags.map((tag, tagIndex) => (
                         <span
                           key={tagIndex}
-                          className="text-xs border border-primary text-primary px-3 py-1 tracking-wider"
+                          className="text-xs border border-primary text-primary px-3 py-1 tracking-wider group-hover:bg-primary/10 transition-colors"
                         >
                           {tag}
                         </span>
                       ))}
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
