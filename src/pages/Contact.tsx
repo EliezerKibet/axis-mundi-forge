@@ -1,24 +1,63 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button-variants';
+import { useState } from "react";
+import { Button } from "@/components/ui/button-variants";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
-    identifier: '',
-    email: '',
-    subject: '',
-    message: ''
+    identifier: "",
+    email: "",
+    subject: "",
+    message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [result, setResult] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log('Form submitted:', formData);
+    setIsSubmitting(true);
+    setResult("Transmitting...");
+
+    const formDataObj = new FormData();
+    formDataObj.append("access_key", "0de4c1f1-b510-4f3b-a430-0551a286611e");
+    formDataObj.append("name", formData.identifier);
+    formDataObj.append("email", formData.email);
+    formDataObj.append("subject", formData.subject);
+    formDataObj.append("message", formData.message);
+
+    try {
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        body: formDataObj,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setResult("Message transmitted successfully");
+        setFormData({
+          identifier: "",
+          email: "",
+          subject: "",
+          message: "",
+        });
+      } else {
+        console.log("Error", data);
+        setResult(data.message || "Transmission failed");
+      }
+    } catch (error) {
+      console.error("Form submission error:", error);
+      setResult("Network error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -54,6 +93,7 @@ const Contact = () => {
                     onChange={handleChange}
                     className="w-full bg-transparent border border-text-secondary/30 px-4 py-3 text-text-primary focus:border-primary focus:outline-none transition-colors"
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
 
@@ -68,6 +108,7 @@ const Contact = () => {
                     onChange={handleChange}
                     className="w-full bg-transparent border border-text-secondary/30 px-4 py-3 text-text-primary focus:border-primary focus:outline-none transition-colors"
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
 
@@ -82,6 +123,7 @@ const Contact = () => {
                     onChange={handleChange}
                     className="w-full bg-transparent border border-text-secondary/30 px-4 py-3 text-text-primary focus:border-primary focus:outline-none transition-colors"
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
 
@@ -96,12 +138,30 @@ const Contact = () => {
                     rows={6}
                     className="w-full bg-transparent border border-text-secondary/30 px-4 py-3 text-text-primary focus:border-primary focus:outline-none transition-colors resize-vertical"
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
 
-                <Button type="submit" variant="tech" className="w-full h-12">
-                  TRANSMIT MESSAGE
+                <Button
+                  type="submit"
+                  variant="tech"
+                  className="w-full h-12"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "TRANSMITTING..." : "TRANSMIT MESSAGE"}
                 </Button>
+
+                {result && (
+                  <div
+                    className={`text-center py-2 ${
+                      result.includes("success")
+                        ? "text-primary"
+                        : "text-red-400"
+                    }`}
+                  >
+                    {result}
+                  </div>
+                )}
               </form>
             </div>
 
@@ -110,16 +170,16 @@ const Contact = () => {
               <div>
                 <h3 className="text-primary mb-4">COORDINATES</h3>
                 <div className="text-text-secondary space-y-2">
-                  <p>37.7749° N, 122.4194° W</p>
-                  <p>San Francisco, CA 94105</p>
+                  <p>6.0329° N, 80.2168° E</p>
+                  <p>Galle Sri Lanka</p>
                 </div>
               </div>
 
               <div>
                 <h3 className="text-primary mb-4">COMMUNICATION</h3>
                 <div className="text-text-secondary space-y-2">
-                  <p>+1 (415) 555-0142</p>
-                  <p>connect@axismundi.tech</p>
+                  <p>555-555-5555</p>
+                  <p>Mary.holmes@axismunditech.com</p>
                 </div>
               </div>
 
@@ -134,7 +194,19 @@ const Contact = () => {
               <div>
                 <h3 className="text-primary mb-4">NETWORK</h3>
                 <div className="text-text-secondary space-y-2">
-                  <p>GitHub | LinkedIn | X</p>
+                  <a
+                    href="https://instagram.com/greenjacket_nomad/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-text-secondary hover:text-primary transition-colors"
+                    aria-label="Instagram"
+                  >
+                    <img
+                      src="/instagram.svg"
+                      alt="Instagram"
+                      className="w-11 h-11"
+                    />
+                  </a>
                 </div>
               </div>
             </div>
