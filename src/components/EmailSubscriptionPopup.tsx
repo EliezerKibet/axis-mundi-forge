@@ -51,7 +51,6 @@ const EmailSubscriptionPopup = ({
   };
 
   const handleNo = async () => {
-    await sendSubscriptionWebhook(false);
     onSubscribe();
   };
 

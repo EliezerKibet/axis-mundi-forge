@@ -92,29 +92,7 @@ const Contact = () => {
   };
 
   const sendWebhookResponse = async (userData: any) => {
-    try {
-      const webhookResponse = await fetch(
-        "https://mholm12.app.n8n.cloud/webhook/subscribe",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: userData.name,
-            email: userData.email,
-            interest: userData.interest,
-          }),
-        }
-      );
-
-      if (webhookResponse.ok) {
-        console.log("Webhook response sent successfully");
-        setShowEmailPopup(true);
-      }
-    } catch (error) {
-      console.error("Webhook response failed:", error);
-    }
+    setShowEmailPopup(true);
   };
 
   const handleChange = (
