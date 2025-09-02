@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button-variants";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import EmailSubscriptionPopup from "@/components/EmailSubscriptionPopup";
 import ContentPopup from "@/components/ContentPopup";
 
@@ -24,40 +30,83 @@ const Contact = () => {
     setIsSubmitting(true);
     setResult("Transmitting...");
 
-    const formDataObj = new FormData();
-    formDataObj.append("access_key", "0de4c1f1-b510-4f3b-a430-0551a286611e");
-    formDataObj.append("name", formData.identifier);
-    formDataObj.append("email", formData.email);
-    formDataObj.append("subject", formData.subject);
-    formDataObj.append("interest", formData.interest);
-    formDataObj.append("message", formData.message);
+    const formDataObj = {
+      name: formData.identifier,
+      email: formData.email,
+      subject: formData.subject,
+      message: formData.message,
+      interest: formData.interest,
+    };
 
     try {
-      const response = await fetch("https://api.web3forms.com/submit", {
-        method: "POST",
-        body: formDataObj,
-      });
+      const response = await fetch(
+        "https://mholm12.app.n8n.cloud/webhook-test/form",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formDataObj),
+        }
+      );
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.ok) {
         setResult("Message transmitted successfully");
+
+        const currentUserData = {
+          name: formData.identifier,
+          email: formData.email,
+          interest: formData.interest,
+        };
+
+        setSelectedInterest(formData.interest);
+
+        if (formData.interest) {
+          //data  for name , email and interest (done in sendWebhookResponse  )
+          await sendWebhookResponse(currentUserData);
+        }
+
         setFormData({
           identifier: "",
           email: "",
           subject: "",
-          interest: "",
           message: "",
+          interest: "",
         });
       } else {
-        console.log("Error", data);
-        setResult(data.message || "Transmission failed");
+        setResult("Transmission failed - please try again");
       }
     } catch (error) {
       console.error("Form submission error:", error);
       setResult("Network error occurred");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const sendWebhookResponse = async (userData: any) => {
+    try {
+      const webhookResponse = await fetch(
+        "https://mholm12.app.n8n.cloud/webhook/subscribe",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: userData.name,
+            email: userData.email,
+            interest: userData.interest,
+          }),
+        }
+      );
+
+      if (webhookResponse.ok) {
+        console.log("Webhook response sent successfully");
+        setShowEmailPopup(true);
+      }
+    } catch (error) {
+      console.error("Webhook response failed:", error);
     }
   };
 
@@ -76,10 +125,9 @@ const Contact = () => {
       interest: value,
     });
     setSelectedInterest(value);
-    setShowEmailPopup(true);
   };
 
-  const handleEmailSubscription = () => {
+  const handleEmailPopupClose = () => {
     setShowEmailPopup(false);
     setShowContentPopup(true);
   };
@@ -102,7 +150,6 @@ const Contact = () => {
           </div>
         </div>
       </section>
-
       {/* Contact Form & Info */}
       <section className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
@@ -159,18 +206,31 @@ const Contact = () => {
                   <label className="block text-sm text-text-secondary tracking-wider mb-3">
                     INTEREST
                   </label>
-                  <Select value={formData.interest} onValueChange={handleInterestChange} required>
+                  <Select
+                    value={formData.interest}
+                    onValueChange={handleInterestChange}
+                    required
+                  >
                     <SelectTrigger className="w-full bg-transparent border border-text-secondary/30 px-4 py-3 text-text-primary focus:border-primary focus:outline-none transition-colors">
                       <SelectValue placeholder="Select your area of interest" />
                     </SelectTrigger>
                     <SelectContent className="bg-[#1a1f3a] border border-text-secondary/30">
-                      <SelectItem value="Quantum Computing" className="text-text-primary hover:bg-primary/20">
+                      <SelectItem
+                        value="Quantum Computing"
+                        className="text-text-primary hover:bg-primary/20"
+                      >
                         Quantum Computing
                       </SelectItem>
-                      <SelectItem value="Resilient AI Systems" className="text-text-primary hover:bg-primary/20">
+                      <SelectItem
+                        value="Resilient AI Systems"
+                        className="text-text-primary hover:bg-primary/20"
+                      >
                         Resilient AI Systems
                       </SelectItem>
-                      <SelectItem value="Neural Commerce Platforms" className="text-text-primary hover:bg-primary/20">
+                      <SelectItem
+                        value="Neural Commerce Platforms"
+                        className="text-text-primary hover:bg-primary/20"
+                      >
                         Neural Commerce Platforms
                       </SelectItem>
                     </SelectContent>
@@ -268,9 +328,10 @@ const Contact = () => {
       <EmailSubscriptionPopup
         isOpen={showEmailPopup}
         onClose={closePopups}
-        onSubscribe={handleEmailSubscription}
+        onSubscribe={handleEmailPopupClose} // Both YES and NO use same handler
+        onDecline={handleEmailPopupClose} // Both lead to content popup
       />
-      
+
       <ContentPopup
         isOpen={showContentPopup}
         onClose={closePopups}
