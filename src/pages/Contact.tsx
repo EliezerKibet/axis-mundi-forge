@@ -1,16 +1,23 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button-variants";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import EmailSubscriptionPopup from "@/components/EmailSubscriptionPopup";
+import ContentPopup from "@/components/ContentPopup";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
     identifier: "",
     email: "",
     subject: "",
+    interest: "",
     message: "",
   });
 
   const [result, setResult] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showEmailPopup, setShowEmailPopup] = useState(false);
+  const [showContentPopup, setShowContentPopup] = useState(false);
+  const [selectedInterest, setSelectedInterest] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,6 +29,7 @@ const Contact = () => {
     formDataObj.append("name", formData.identifier);
     formDataObj.append("email", formData.email);
     formDataObj.append("subject", formData.subject);
+    formDataObj.append("interest", formData.interest);
     formDataObj.append("message", formData.message);
 
     try {
@@ -38,6 +46,7 @@ const Contact = () => {
           identifier: "",
           email: "",
           subject: "",
+          interest: "",
           message: "",
         });
       } else {
@@ -59,6 +68,25 @@ const Contact = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleInterestChange = (value: string) => {
+    setFormData({
+      ...formData,
+      interest: value,
+    });
+    setSelectedInterest(value);
+    setShowEmailPopup(true);
+  };
+
+  const handleEmailSubscription = () => {
+    setShowEmailPopup(false);
+    setShowContentPopup(true);
+  };
+
+  const closePopups = () => {
+    setShowEmailPopup(false);
+    setShowContentPopup(false);
   };
 
   return (
@@ -125,6 +153,28 @@ const Contact = () => {
                     required
                     disabled={isSubmitting}
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-text-secondary tracking-wider mb-3">
+                    INTEREST
+                  </label>
+                  <Select value={formData.interest} onValueChange={handleInterestChange} required>
+                    <SelectTrigger className="w-full bg-transparent border border-text-secondary/30 px-4 py-3 text-text-primary focus:border-primary focus:outline-none transition-colors">
+                      <SelectValue placeholder="Select your area of interest" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1a1f3a] border border-text-secondary/30">
+                      <SelectItem value="Quantum Computing" className="text-text-primary hover:bg-primary/20">
+                        Quantum Computing
+                      </SelectItem>
+                      <SelectItem value="Resilient AI Systems" className="text-text-primary hover:bg-primary/20">
+                        Resilient AI Systems
+                      </SelectItem>
+                      <SelectItem value="Neural Commerce Platforms" className="text-text-primary hover:bg-primary/20">
+                        Neural Commerce Platforms
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
@@ -213,6 +263,19 @@ const Contact = () => {
           </div>
         </div>
       </section>
+
+      {/* Popups */}
+      <EmailSubscriptionPopup
+        isOpen={showEmailPopup}
+        onClose={closePopups}
+        onSubscribe={handleEmailSubscription}
+      />
+      
+      <ContentPopup
+        isOpen={showContentPopup}
+        onClose={closePopups}
+        interest={selectedInterest}
+      />
     </div>
   );
 };
