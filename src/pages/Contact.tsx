@@ -19,6 +19,12 @@ const Contact = () => {
     message: "",
   });
 
+  const [userData, setUserData] = useState({
+    name: "",
+    email: "",
+    interest: "",
+  });
+
   const [result, setResult] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showEmailPopup, setShowEmailPopup] = useState(false);
@@ -59,6 +65,7 @@ const Contact = () => {
           interest: formData.interest,
         };
 
+        setUserData(currentUserData);
         setSelectedInterest(formData.interest);
 
         if (formData.interest) {
@@ -328,8 +335,9 @@ const Contact = () => {
       <EmailSubscriptionPopup
         isOpen={showEmailPopup}
         onClose={closePopups}
-        onSubscribe={handleEmailPopupClose} // Both YES and NO use same handler
-        onDecline={handleEmailPopupClose} // Both lead to content popup
+        onSubscribe={handleEmailPopupClose}
+        onDecline={handleEmailPopupClose}
+        userData={userData}
       />
 
       <ContentPopup

@@ -1,24 +1,57 @@
 import { X, Mail } from "lucide-react";
+import { useState } from "react";
 
 interface EmailSubscriptionPopupProps {
   isOpen: boolean;
   onClose: () => void;
   onSubscribe: () => void;
   onDecline: () => void;
+  userData: { name: string; email: string; interest: string };
 }
 
 const EmailSubscriptionPopup = ({
   isOpen,
   onClose,
   onSubscribe,
+  userData,
 }: EmailSubscriptionPopupProps) => {
   if (!isOpen) return null;
 
-  const handleYes = () => {
+  const sendSubscriptionWebhook = async (subscribed: boolean) => {
+    if (!userData) return;
+
+    try {
+      const webhookResponse = await fetch(
+        "https://mholm12.app.n8n.cloud/webhook/subscribe",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: userData.name,
+            email: userData.email,
+            interest: userData.interest,
+            subscribed: subscribed, // true for YES, false for NO
+          }),
+        }
+      );
+
+      if (webhookResponse.ok) {
+        console.log("Subscription webhook sent successfully");
+      }
+    } catch (error) {
+      console.error("Subscription webhook failed:", error);
+    }
+  };
+
+  const handleYes = async () => {
+    await sendSubscriptionWebhook(true);
     onSubscribe();
   };
 
-  const handleNo = () => {
+  const handleNo = async () => {
+    await sendSubscriptionWebhook(false);
     onSubscribe();
   };
 
