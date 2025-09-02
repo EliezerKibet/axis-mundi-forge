@@ -40,7 +40,7 @@ const Contact = () => {
 
     try {
       const response = await fetch(
-        "https://mholm12.app.n8n.cloud/webhook-test/form",
+        "https://mholm12.app.n8n.cloud/webhook/form",
         {
           method: "POST",
           headers: {
