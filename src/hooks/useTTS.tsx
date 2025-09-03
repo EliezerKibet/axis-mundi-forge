@@ -37,17 +37,35 @@ export const useTTS = () => {
     return 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
   }, []);
 
-  // Load available voices
+  // Load available voices and prefer Microsoft Liam
   useEffect(() => {
     if (!isSupported()) return;
 
     const loadVoices = () => {
       const voices = speechSynthesis.getVoices();
       if (voices.length > 0) {
+        // Prefer Microsoft Liam (Canadian) voice
+        const liamVoice = voices.find(voice => 
+          voice.name.toLowerCase().includes('liam') && 
+          voice.lang.includes('en-CA')
+        );
+        
+        // Fallback to most natural non-robotic voice
+        const naturalVoices = voices.filter(voice => 
+          voice.lang.startsWith('en-') && 
+          !voice.name.toLowerCase().includes('robotic') &&
+          (voice.name.includes('Natural') || 
+           voice.name.includes('Neural') ||
+           voice.name.includes('Premium'))
+        );
+        
+        const preferredVoice = liamVoice || naturalVoices[0] || voices.find(voice => voice.lang.startsWith('en-')) || voices[0];
+        
         setState(prev => ({
           ...prev,
           availableVoices: voices,
-          selectedVoice: prev.selectedVoice || voices.find(voice => voice.lang.includes('en')) || voices[0]
+          selectedVoice: prev.selectedVoice || preferredVoice,
+          speed: 1 // Lock to 1x speed
         }));
       }
     };
@@ -88,11 +106,11 @@ export const useTTS = () => {
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utteranceRef.current = utterance;
 
-    // Configure utterance
+    // Configure utterance - locked to 1x speed
     utterance.voice = options.voice || state.selectedVoice;
-    utterance.rate = options.speed || state.speed;
-    utterance.pitch = 1;
-    utterance.volume = 1;
+    utterance.rate = 1.0; // Fixed at 1x speed
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
 
     // Event handlers
     utterance.onstart = () => {

@@ -14,19 +14,13 @@ const TTSControls = ({ content, title, className = '' }: TTSControlsProps) => {
     isPaused,
     progress,
     selectedVoice,
-    speed,
-    availableVoices,
     speak,
     pause,
     resume,
     stop,
     toggle,
-    setVoice,
-    setSpeed,
     isSupported
   } = useTTS();
-
-  const [isExpanded, setIsExpanded] = useState(false);
 
   // Auto-scroll to highlight current text
   useEffect(() => {
@@ -64,8 +58,6 @@ const TTSControls = ({ content, title, className = '' }: TTSControlsProps) => {
     }
   };
 
-  const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2];
-
   return (
     <div className={`bg-[#1a1f3a] border border-primary/20 rounded-lg transition-all duration-300 ${className}`}>
       {/* Main Controls Bar */}
@@ -73,10 +65,11 @@ const TTSControls = ({ content, title, className = '' }: TTSControlsProps) => {
         {/* Play/Pause Button */}
         <button
           onClick={handlePlay}
-          className="flex items-center justify-center w-10 h-10 bg-primary hover:bg-primary-accent text-white rounded-full transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-accent text-background transition-colors font-medium tracking-wide"
           aria-label={isPlaying ? "Pause" : "Play"}
         >
-          {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+          {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          {isPlaying ? 'PAUSE READING' : 'LISTEN TO ARTICLE'}
         </button>
 
         {/* Stop Button */}
@@ -107,66 +100,14 @@ const TTSControls = ({ content, title, className = '' }: TTSControlsProps) => {
             />
           </div>
         </div>
-
-        {/* Expand/Collapse Button */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="text-text-secondary hover:text-primary transition-colors text-sm"
-        >
-          {isExpanded ? '▼' : '▲'}
-        </button>
       </div>
 
-      {/* Expanded Controls */}
-      {isExpanded && (
-        <div className="border-t border-primary/20 p-4 space-y-4">
-          {/* Speed Control */}
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-text-secondary w-16">Speed:</label>
-            <div className="flex gap-1">
-              {speedOptions.map((speedOption) => (
-                <button
-                  key={speedOption}
-                  onClick={() => setSpeed(speedOption)}
-                  className={`px-3 py-1 text-xs rounded transition-colors ${
-                    speed === speedOption
-                      ? 'bg-primary text-white'
-                      : 'bg-background border border-primary/20 text-text-secondary hover:text-primary hover:border-primary/40'
-                  }`}
-                >
-                  {speedOption}x
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Voice Selection */}
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-text-secondary w-16">Voice:</label>
-            <select
-              value={selectedVoice?.name || ''}
-              onChange={(e) => {
-                const voice = availableVoices.find(v => v.name === e.target.value);
-                if (voice) setVoice(voice);
-              }}
-              className="flex-1 bg-background border border-primary/20 text-text-secondary text-sm px-3 py-2 rounded focus:border-primary focus:outline-none"
-            >
-              {availableVoices
-                .filter(voice => voice.lang.includes('en'))
-                .map((voice) => (
-                  <option key={voice.name} value={voice.name}>
-                    {voice.name} ({voice.lang})
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          {/* Instructions */}
-          <div className="text-xs text-text-secondary/70 pt-2 border-t border-primary/10">
-            <p>Keyboard shortcuts: Space to play/pause, Esc to stop</p>
-          </div>
-        </div>
-      )}
+      {/* Voice Info */}
+      <div className="px-4 pb-4">
+        <span className="text-xs text-text-secondary flex items-center gap-2">
+          🎤 {selectedVoice?.name || 'Default Voice'} • 1x Speed
+        </span>
+      </div>
     </div>
   );
 };
