@@ -1,12 +1,41 @@
 import { useParams, Link } from "react-router-dom";
 import { Calendar, Clock, User, ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
 import { blogArticles } from "../data/blogArticles";
 import BlogSidebar from "../components/BlogSidebar";
+import TTSControls from "../components/TTSControls";
 import QuantumCircuit from "../components/QuantumCircuit";
 
 const BlogArticle = () => {
   const { slug } = useParams<{ slug: string }>();
   const article = blogArticles.find((article) => article.slug === slug);
+
+  // Add keyboard shortcuts for TTS
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if not in an input field
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key) {
+        case ' ':
+          e.preventDefault();
+          // TTS play/pause will be handled by the TTSControls component
+          const playButton = document.querySelector('[aria-label="Play"], [aria-label="Pause"]') as HTMLButtonElement;
+          if (playButton) playButton.click();
+          break;
+        case 'Escape':
+          // TTS stop will be handled by the TTSControls component
+          const stopButton = document.querySelector('[aria-label="Stop"]') as HTMLButtonElement;
+          if (stopButton) stopButton.click();
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   if (!article) {
     return (
@@ -139,6 +168,15 @@ const BlogArticle = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Article Content */}
           <div className="lg:col-span-2">
+            {/* TTS Controls */}
+            <div className="mb-8">
+              <TTSControls 
+                content={article.content}
+                title={article.title}
+                className="sticky top-20 z-40"
+              />
+            </div>
+
             {/* Quantum Circuit Visualization (for quantum article) */}
             {article.slug === "quantum-computing-enterprise" && (
               <div className="mb-12">

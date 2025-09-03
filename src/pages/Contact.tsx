@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import EmailSubscriptionPopup from "@/components/EmailSubscriptionPopup";
-import ContentPopup from "@/components/ContentPopup";
+import ContentCurationPopup from "@/components/ContentCurationPopup";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -318,10 +318,10 @@ const Contact = () => {
         userData={userData}
       />
 
-      <ContentPopup
+      <ContentCurationPopup
         isOpen={showContentPopup}
         onClose={closePopups}
-        interest={selectedInterest}
+        selectedInterest={selectedInterest}
       />
     </div>
   );

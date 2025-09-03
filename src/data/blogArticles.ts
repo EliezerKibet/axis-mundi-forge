@@ -18,7 +18,7 @@ export const blogArticles: BlogArticle[] = [
     date: "January 15, 2025",
     readingTime: "5 min read",
     author: "Dr. Sarah Chen, CTO",
-    category: "Emerging Technology",
+    category: "Quantum Computing",
     preview: "The era of quantum computing has moved from theoretical physics labs to enterprise boardrooms. At Axis Mundi Technologies, we've been implementing quantum solutions...",
     content: `
 # The Quantum Advantage is Here
@@ -119,7 +119,7 @@ Building resilience requires upfront investment, but the alternative—productio
     date: "January 5, 2025",
     readingTime: "4 min read",
     author: "Alex Thompson, Blockchain Architect",
-    category: "Blockchain",
+    category: "Web3 & Decentralization",
     preview: "Web3 isn't just cryptocurrency—it's a fundamental reimagining of digital ownership, identity, and trust. As architects of decentralized systems...",
     content: `
 # The Paradigm Shift to Decentralization
@@ -157,6 +157,94 @@ By 2027, we predict:
 
 The question isn't if you'll use Web3—it's whether you'll be ready when your competitors do.
     `
+  },
+  {
+    id: 4,
+    slug: "quantum-drug-discovery-2030",
+    title: "Breaking the Speed Barrier: How Quantum Supremacy Will Transform Drug Discovery by 2030",
+    date: "March 15, 2024",
+    readingTime: "8 min read",
+    author: "Dr. Sarah Chen",
+    category: "Quantum Computing",
+    preview: "The pharmaceutical industry stands at the precipice of a revolutionary transformation. While traditional computers struggle to simulate complex molecular interactions, quantum computers promise to compress these calculations into mere hours...",
+    content: `# Coming Soon - Full Article Content\n\nThis article content will be added manually by the site administrator.`
+  },
+  {
+    id: 5,
+    slug: "ai-carbon-footprint-hidden-cost",
+    title: "The Hidden Cost of AI: Why Your ChatBot's Carbon Footprint Matters More Than You Think",
+    date: "March 18, 2024",
+    readingTime: "7 min read",
+    author: "Marcus Rodriguez",
+    category: "Artificial Intelligence",
+    preview: "Every time you ask an AI assistant a question, a small power plant's worth of electricity springs into action. The carbon footprint of artificial intelligence has become tech's dirty secret...",
+    content: `# Coming Soon - Full Article Content\n\nThis article content will be added manually by the site administrator.`
+  },
+  {
+    id: 6,
+    slug: "dao-comeback-2024",
+    title: "DAOs Failed in 2022. Here's Why They're About to Make a Massive Comeback",
+    date: "March 20, 2024",
+    readingTime: "9 min read",
+    author: "Alexandra Kim",
+    category: "Web3 & Decentralization",
+    preview: "The headlines were brutal throughout 2022, yet today a new generation of DAOs is quietly revolutionizing human coordination, having learned crucial lessons from their predecessors' mistakes...",
+    content: `# Coming Soon - Full Article Content\n\nThis article content will be added manually by the site administrator.`
+  },
+  {
+    id: 7,
+    slug: "neuromorphic-computing-brain-chips",
+    title: "Your Brain Runs on 20 Watts. These New Chips Are Finally Catching Up",
+    date: "March 22, 2024",
+    readingTime: "8 min read",
+    author: "Dr. James Liu",
+    category: "Emerging Technology",
+    preview: "The human brain operates on the same power as a dim light bulb. After decades of research, neuromorphic computing is finally delivering on its promise, with implications that extend far beyond energy savings...",
+    content: `# Coming Soon - Full Article Content\n\nThis article content will be added manually by the site administrator.`
+  },
+  {
+    id: 8,
+    slug: "quantum-internet-unhackable-communications",
+    title: "The Quantum Internet is Coming: Why Unhackable Communications Will Change Everything",
+    date: "March 24, 2024",
+    readingTime: "7 min read",
+    author: "Dr. Raj Patel",
+    category: "Quantum Computing",
+    preview: "Imagine sending a message that's physically impossible to intercept without detection. This isn't a cybersecurity fantasy; it's the promise of quantum networking, and the infrastructure is being built right now...",
+    content: `# Coming Soon - Full Article Content\n\nThis article content will be added manually by the site administrator.`
+  },
+  {
+    id: 9,
+    slug: "ai-paradox-dumber-smarter",
+    title: "The AI Paradox: Why Making AI Dumber Might Be the Key to AGI",
+    date: "March 26, 2024",
+    readingTime: "8 min read",
+    author: "Sofia Nakamura",
+    category: "Artificial Intelligence",
+    preview: "OpenAI's latest model scored 95% on the bar exam, yet fails at tasks any toddler could handle. The path to AGI might require making AI systems dumber, not smarter...",
+    content: `# Coming Soon - Full Article Content\n\nThis article content will be added manually by the site administrator.`
+  },
+  {
+    id: 10,
+    slug: "cognitive-overfitting-bigger-models",
+    title: "Cognitive Overfitting: Why Bigger Models Think Worse",
+    date: "May 11, 2025",
+    readingTime: "7 min read",
+    author: "Priya Deshmukh",
+    category: "Artificial Intelligence",
+    preview: "Scaling laws have defined the last decade of AI. But cracks are showing - models so finely tuned to benchmarks that they lose flexibility in real-world reasoning...",
+    content: `# Coming Soon - Full Article Content\n\nThis article content will be added manually by the site administrator.`
+  },
+  {
+    id: 11,
+    slug: "ai-alignment-mirage-safer-dangerous",
+    title: "The Alignment Mirage: Why Safer AI Might Be More Dangerous",
+    date: "February 3, 2025",
+    readingTime: "9 min read",
+    author: "Dr. Lena Alvarez",
+    category: "Artificial Intelligence",
+    preview: "AI researchers warn of the alignment problem, yet critics suggest we may be chasing a mirage. By making AI seem safer, we may actually make it more dangerous...",
+    content: `# Coming Soon - Full Article Content\n\nThis article content will be added manually by the site administrator.`
   }
 ];
 
@@ -164,7 +252,10 @@ export const blogCategories = [
   "Emerging Technology",
   "Cloud Computing", 
   "AI & ML",
+  "Artificial Intelligence",
   "Security",
   "Infrastructure",
-  "DevOps"
+  "DevOps",
+  "Quantum Computing",
+  "Web3 & Decentralization"
 ];
