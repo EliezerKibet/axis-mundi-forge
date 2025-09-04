@@ -27,6 +27,7 @@ const Contact = () => {
 
   const [result, setResult] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [showEmailPopup, setShowEmailPopup] = useState(false);
   const [showContentPopup, setShowContentPopup] = useState(false);
   const [selectedInterest, setSelectedInterest] = useState("");
@@ -57,7 +58,16 @@ const Contact = () => {
       );
 
       if (response.ok) {
-        setResult("Message transmitted successfully");
+        // Remove transmitting text and add success message
+        setResult("");
+        setSuccessMessage("Message sent successfully!");
+        
+        // Console log for developer verification
+        console.log("✅ Contact form submitted successfully:", {
+          timestamp: new Date().toISOString(),
+          formData: formDataObj,
+          response: response
+        });
 
         const currentUserData = {
           name: formData.identifier,
@@ -80,12 +90,17 @@ const Contact = () => {
           message: "",
           interest: "",
         });
+
+        // Hide success message after 3 seconds
+        setTimeout(() => setSuccessMessage(""), 3000);
       } else {
         setResult("Transmission failed - please try again");
+        setSuccessMessage("");
       }
     } catch (error) {
-      console.error("Form submission error:", error);
+      console.error("❌ Contact form submission failed:", error);
       setResult("Network error occurred");
+      setSuccessMessage("");
     } finally {
       setIsSubmitting(false);
     }
@@ -247,14 +262,14 @@ const Contact = () => {
                 </Button>
 
                 {result && (
-                  <div
-                    className={`text-center py-2 ${
-                      result.includes("success")
-                        ? "text-primary"
-                        : "text-red-400"
-                    }`}
-                  >
+                  <div className="text-center py-2 text-red-400">
                     {result}
+                  </div>
+                )}
+
+                {successMessage && (
+                  <div className="success-message mt-4 p-3 bg-green-600/20 border border-green-600/30 text-green-400 text-sm text-center">
+                    {successMessage}
                   </div>
                 )}
               </form>

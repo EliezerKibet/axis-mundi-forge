@@ -37,35 +37,67 @@ export const useTTS = () => {
     return 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
   }, []);
 
-  // Load available voices and prefer Microsoft Liam
+  // Load available voices and select most realistic one
   useEffect(() => {
     if (!isSupported()) return;
 
     const loadVoices = () => {
       const voices = speechSynthesis.getVoices();
       if (voices.length > 0) {
-        // Prefer Microsoft Liam (Canadian) voice
-        const liamVoice = voices.find(voice => 
-          voice.name.toLowerCase().includes('liam') && 
-          voice.lang.includes('en-CA')
-        );
+        const getRealisticVoice = () => {
+          // Priority order for realistic voices
+          const preferredVoices = [
+            'Google UK English Female',
+            'Google US English',
+            'Microsoft Aria Online (Natural)',
+            'Microsoft Zira Desktop',
+            'Alex',
+            'Samantha'
+          ];
+          
+          // Find the best available voice
+          let selectedVoice = null;
+          for (const preferred of preferredVoices) {
+            selectedVoice = voices.find(voice => 
+              voice.name.includes(preferred) || 
+              voice.name.toLowerCase().includes('neural') ||
+              voice.name.toLowerCase().includes('natural')
+            );
+            if (selectedVoice) break;
+          }
+          
+          // Filter for high-quality voices if no preferred found
+          if (!selectedVoice) {
+            const qualityVoices = voices.filter(voice => 
+              voice.name.toLowerCase().includes('neural') ||
+              voice.name.toLowerCase().includes('natural') ||
+              voice.name.toLowerCase().includes('premium') ||
+              voice.name.includes('Google') ||
+              voice.name.includes('Microsoft')
+            );
+            
+            // Prefer female voices as they tend to sound more natural
+            const femaleVoices = qualityVoices.filter(voice => 
+              voice.name.toLowerCase().includes('female') ||
+              voice.name.toLowerCase().includes('aria') ||
+              voice.name.toLowerCase().includes('jenny') ||
+              voice.name.toLowerCase().includes('joanna')
+            );
+            
+            selectedVoice = femaleVoices.length > 0 ? femaleVoices[0] : qualityVoices[0];
+          }
+          
+          // Final fallback to first English voice
+          return selectedVoice || voices.find(voice => voice.lang.startsWith('en-')) || voices[0];
+        };
         
-        // Fallback to most natural non-robotic voice
-        const naturalVoices = voices.filter(voice => 
-          voice.lang.startsWith('en-') && 
-          !voice.name.toLowerCase().includes('robotic') &&
-          (voice.name.includes('Natural') || 
-           voice.name.includes('Neural') ||
-           voice.name.includes('Premium'))
-        );
-        
-        const preferredVoice = liamVoice || naturalVoices[0] || voices.find(voice => voice.lang.startsWith('en-')) || voices[0];
+        const realisticVoice = getRealisticVoice();
         
         setState(prev => ({
           ...prev,
           availableVoices: voices,
-          selectedVoice: prev.selectedVoice || preferredVoice,
-          speed: prev.speed || 1 // Allow variable speed, default to 1x
+          selectedVoice: prev.selectedVoice || realisticVoice,
+          speed: prev.speed || 1
         }));
       }
     };
@@ -103,14 +135,17 @@ export const useTTS = () => {
     textRef.current = cleanText;
     positionRef.current = 0;
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
+    // Add natural pauses and intonation
+    const naturalText = cleanText.replace(/\./g, '. ').replace(/,/g, ', ');
+    
+    const utterance = new SpeechSynthesisUtterance(naturalText);
     utteranceRef.current = utterance;
 
     // Configure utterance with current speed
     utterance.voice = options.voice || state.selectedVoice;
     utterance.rate = options.speed || state.speed;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
+    utterance.pitch = 1.0; // Natural pitch
+    utterance.volume = 1.0; // Full volume
 
     // Event handlers
     utterance.onstart = () => {
