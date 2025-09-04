@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button-variants";
 import { ArrowRight } from "lucide-react";
-
+import { useParams, Link } from "react-router-dom";
 const Home = () => {
   const [animateServices, setAnimateServices] = useState(false);
 
@@ -52,10 +52,12 @@ const Home = () => {
 
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Button variant="hero" size="hero" className="group">
+              <Link className="absolute inset-0" to="/projects" />
               EXPLORE PROJECTS
               <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Button>
             <Button variant="heroSecondary" size="hero">
+              <Link className="absolute inset-0" to="/contact" />
               START BUILDING
             </Button>
           </div>

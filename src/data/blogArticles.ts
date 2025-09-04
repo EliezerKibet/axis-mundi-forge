@@ -23,7 +23,6 @@ export const blogArticles: BlogArticle[] = [
     preview:
       "The pharmaceutical industry stands at the precipice of a revolutionary transformation. While traditional computers struggle to simulate complex molecular interactions, quantum computers promise to compress these calculations into mere hours...",
     content: `
-# Breaking the Speed Barrier: How Quantum Supremacy Will Transform Drug Discovery by 2030
 
 The pharmaceutical industry stands at the precipice of a revolutionary transformation. While traditional computers struggle to simulate complex molecular interactions—taking years to model a single protein fold—quantum computers promise to compress these calculations into mere hours. This isn't science fiction; it's happening in laboratories across the world right now.
 

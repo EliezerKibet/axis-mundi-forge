@@ -35,7 +35,6 @@ const Contact = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setResult("Transmitting...");
 
     const formDataObj = {
       name: formData.identifier,
@@ -60,13 +59,12 @@ const Contact = () => {
       if (response.ok) {
         // Remove transmitting text and add success message
         setResult("");
-        setSuccessMessage("Message sent successfully!");
-        
+
         // Console log for developer verification
         console.log("✅ Contact form submitted successfully:", {
           timestamp: new Date().toISOString(),
           formData: formDataObj,
-          response: response
+          response: response,
         });
 
         const currentUserData = {
@@ -262,9 +260,7 @@ const Contact = () => {
                 </Button>
 
                 {result && (
-                  <div className="text-center py-2 text-red-400">
-                    {result}
-                  </div>
+                  <div className="text-center py-2 text-red-400">{result}</div>
                 )}
 
                 {successMessage && (

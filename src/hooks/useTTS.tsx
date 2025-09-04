@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface TTSState {
   isPlaying: boolean;
@@ -25,16 +25,16 @@ export const useTTS = () => {
     selectedVoice: null,
     speed: 1,
     availableVoices: [],
-    progress: 0
+    progress: 0,
   });
 
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const textRef = useRef<string>('');
+  const textRef = useRef<string>("");
   const positionRef = useRef<number>(0);
 
   // Check if browser supports speech synthesis
   const isSupported = useCallback(() => {
-    return 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+    return "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
   }, []);
 
   // Load available voices and select most realistic one
@@ -45,59 +45,103 @@ export const useTTS = () => {
       const voices = speechSynthesis.getVoices();
       if (voices.length > 0) {
         const getRealisticVoice = () => {
-          // Priority order for realistic voices
+          console.log("All available voices:");
+          voices.forEach((voice, index) => {
+            console.log(
+              `${index}: ${voice.name} (${voice.lang}) - ${
+                voice.localService ? "Local" : "Network"
+              }`
+            );
+          });
+
+          // FIRST: Filter for English voices only
+          const englishVoices = voices.filter((voice) => {
+            const lang = voice.lang.toLowerCase();
+            return lang.startsWith("en-") || lang.includes("english");
+          });
+
+          console.log("English voices found:", englishVoices.length);
+
+          if (englishVoices.length === 0) {
+            console.warn("No English voices available, using default");
+            return voices[0] || null;
+          }
+
+          // Priority order for realistic English voices
           const preferredVoices = [
-            'Google UK English Female',
-            'Google US English',
-            'Microsoft Aria Online (Natural)',
-            'Microsoft Zira Desktop',
-            'Alex',
-            'Samantha'
+            "Microsoft Aria Online (Natural)",
+            "Microsoft Emma Online (Natural)",
+            "Microsoft Ava Online (Natural)",
+            "Microsoft Jenny Online (Natural)",
+            "Microsoft Michelle Online (Natural)",
+            "Microsoft Ana Online (Natural)",
+            "Microsoft Natasha Online (Natural)",
+            "Microsoft Clara Online (Natural)",
+            "Microsoft Emily Online (Natural)",
+            "Microsoft Libby Online (Natural)",
+            "Microsoft Maisie Online (Natural)",
+            "Microsoft Sonia Online (Natural)",
           ];
-          
-          // Find the best available voice
-          let selectedVoice = null;
+
+          // Find exact matches in English voices
           for (const preferred of preferredVoices) {
-            selectedVoice = voices.find(voice => 
-              voice.name.includes(preferred) || 
-              voice.name.toLowerCase().includes('neural') ||
-              voice.name.toLowerCase().includes('natural')
+            const exactMatch = englishVoices.find(
+              (voice) => voice.name === preferred
             );
-            if (selectedVoice) break;
+            if (exactMatch) {
+              console.log("Selected voice:", exactMatch.name, exactMatch.lang);
+              return exactMatch;
+            }
           }
-          
-          // Filter for high-quality voices if no preferred found
-          if (!selectedVoice) {
-            const qualityVoices = voices.filter(voice => 
-              voice.name.toLowerCase().includes('neural') ||
-              voice.name.toLowerCase().includes('natural') ||
-              voice.name.toLowerCase().includes('premium') ||
-              voice.name.includes('Google') ||
-              voice.name.includes('Microsoft')
+
+          // Find partial matches in English voices
+          for (const preferred of preferredVoices) {
+            const partialMatch = englishVoices.find((voice) =>
+              voice.name.toLowerCase().includes(preferred.toLowerCase())
             );
-            
-            // Prefer female voices as they tend to sound more natural
-            const femaleVoices = qualityVoices.filter(voice => 
-              voice.name.toLowerCase().includes('female') ||
-              voice.name.toLowerCase().includes('aria') ||
-              voice.name.toLowerCase().includes('jenny') ||
-              voice.name.toLowerCase().includes('joanna')
-            );
-            
-            selectedVoice = femaleVoices.length > 0 ? femaleVoices[0] : qualityVoices[0];
+            if (partialMatch) {
+              console.log(
+                "Selected voice (partial match):",
+                partialMatch.name,
+                partialMatch.lang
+              );
+              return partialMatch;
+            }
           }
-          
-          // Final fallback to first English voice
-          return selectedVoice || voices.find(voice => voice.lang.startsWith('en-')) || voices[0];
+
+          // Look for quality English voices
+          const qualityEnglishVoices = englishVoices.filter(
+            (voice) =>
+              voice.name.toLowerCase().includes("neural") ||
+              voice.name.toLowerCase().includes("natural") ||
+              voice.name.toLowerCase().includes("premium")
+          );
+
+          if (qualityEnglishVoices.length > 0) {
+            console.log(
+              "Selected quality English voice:",
+              qualityEnglishVoices[0].name,
+              qualityEnglishVoices[0].lang
+            );
+            return qualityEnglishVoices[0];
+          }
+
+          // Default to first English voice
+          console.log(
+            "Selected default English voice:",
+            englishVoices[0].name,
+            englishVoices[0].lang
+          );
+          return englishVoices[0];
         };
-        
+
         const realisticVoice = getRealisticVoice();
-        
-        setState(prev => ({
+
+        setState((prev) => ({
           ...prev,
           availableVoices: voices,
           selectedVoice: prev.selectedVoice || realisticVoice,
-          speed: prev.speed || 1
+          speed: prev.speed || 1,
         }));
       }
     };
@@ -112,107 +156,281 @@ export const useTTS = () => {
 
   // Clean text for TTS
   const cleanTextForTTS = useCallback((text: string): string => {
-    return text
-      .replace(/<[^>]*>/g, '') // Remove HTML tags
-      .replace(/#{1,6}\s/g, '') // Remove markdown headers
-      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
-      .replace(/\*(.*?)\*/g, '$1') // Remove italic markdown
-      .replace(/`([^`]*)`/g, '$1') // Remove inline code
-      .replace(/```[\s\S]*?```/g, '') // Remove code blocks
-      .replace(/\n{3,}/g, '\n\n') // Normalize line breaks
-      .replace(/\s+/g, ' ') // Normalize spaces
-      .trim();
+    return (
+      text
+        // Clean HTML first
+        .replace(/<[^>]*>/g, "")
+        .replace(/`([^`]*)`/g, "$1") // Remove inline code
+        .replace(/```[\s\S]*?```/g, "") // Remove code blocks
+        .replace(/\*\*(.*?)\*\*/g, "$1") // Remove bold markdown
+        .replace(/\*(.*?)\*/g, "$1") // Remove italic markdown
+
+        // Fix number pronunciation
+        .replace(/\b(\d{1,3}),(\d{3}),(\d{3})\b/g, (match, p1, p2, p3) => {
+          const num = parseInt(p1 + p2 + p3);
+          if (num === 5000000) return "five million";
+          if (num === 1000000) return "one million";
+          return match;
+        })
+        .replace(/\b(\d{1,3}),(\d{3})\b/g, (match, p1, p2) => {
+          const thousands = parseInt(p1);
+          if (thousands === 1) return "one thousand";
+          if (thousands === 2) return "two thousand";
+          if (thousands === 3) return "three thousand";
+          if (thousands === 4) return "four thousand";
+          if (thousands === 5) return "five thousand";
+          if (thousands === 10) return "ten thousand";
+          if (thousands === 20) return "twenty thousand";
+          if (thousands === 50) return "fifty thousand";
+          if (thousands === 100) return "one hundred thousand";
+          if (thousands === 500) return "five hundred thousand";
+          return match;
+        })
+        .replace(/\b1,287\b/g, "twelve eighty-seven")
+        .replace(/\b502\b/g, "five hundred and two")
+        .replace(/\b112\b/g, "one hundred and twelve")
+        .replace(/\b433\b/g, "four hundred and thirty-three")
+        .replace(/\b86\b/g, "eighty-six")
+        .replace(/\b20\b/g, "twenty")
+        .replace(/\b2030\b/g, "twenty thirty")
+        .replace(/\b2025\b/g, "twenty twenty-five")
+        .replace(/\b2024\b/g, "twenty twenty-four")
+        .replace(/\b2022\b/g, "twenty twenty-two")
+
+        // Mark different content types for processing
+        .replace(/^# (.+)$/gm, "MAIN_TITLE:$1") // Main titles
+        .replace(/^## (.+)$/gm, "SUB_TITLE:$1") // Subtitles
+        .replace(/^### (.+)$/gm, "SUB_TITLE:$1") // Sub-subtitles
+
+        // Clean up spacing
+        .replace(/\n\n+/g, "\n\n") // Normalize paragraph breaks
+        .replace(/[ \t]+/g, " ") // Normalize spaces
+        .trim()
+    );
   }, []);
 
   // Start speaking
-  const speak = useCallback((text: string, options: TTSOptions = {}) => {
-    if (!isSupported() || !text.trim()) return;
+  const speak = useCallback(
+    (text: string, options: TTSOptions = {}) => {
+      if (!isSupported() || !text.trim()) return;
 
-    // Stop any current speech
-    speechSynthesis.cancel();
+      speechSynthesis.cancel();
 
-    const cleanText = cleanTextForTTS(text);
-    textRef.current = cleanText;
-    positionRef.current = 0;
-
-    // Add natural pauses and intonation
-    const naturalText = cleanText.replace(/\./g, '. ').replace(/,/g, ', ');
-    
-    const utterance = new SpeechSynthesisUtterance(naturalText);
-    utteranceRef.current = utterance;
-
-    // Configure utterance with current speed
-    utterance.voice = options.voice || state.selectedVoice;
-    utterance.rate = options.speed || state.speed;
-    utterance.pitch = 1.0; // Natural pitch
-    utterance.volume = 1.0; // Full volume
-
-    // Event handlers
-    utterance.onstart = () => {
-      setState(prev => ({ ...prev, isPlaying: true, isPaused: false }));
-    };
-
-    utterance.onend = () => {
-      setState(prev => ({ 
-        ...prev, 
-        isPlaying: false, 
-        isPaused: false, 
-        currentPosition: 0,
-        progress: 0
-      }));
+      const cleanText = cleanTextForTTS(text);
+      textRef.current = cleanText;
       positionRef.current = 0;
-      options.onEnd?.();
-    };
 
-    utterance.onerror = () => {
-      setState(prev => ({ 
-        ...prev, 
-        isPlaying: false, 
-        isPaused: false 
-      }));
-    };
+      // Process text with different speeds for different content types
+      const processTextWithSpeeds = (text: string) => {
+        const segments = [];
+        const lines = text.split("\n");
 
-    utterance.onboundary = (event) => {
-      if (event.name === 'word') {
-        positionRef.current = event.charIndex;
-        const progress = (event.charIndex / cleanText.length) * 100;
-        setState(prev => ({ 
-          ...prev, 
-          currentPosition: event.charIndex,
-          progress 
-        }));
-        options.onProgress?.(event.charIndex);
-      }
-    };
+        console.log("DEBUG: Total lines after split:", lines.length);
+        console.log("DEBUG: First 10 lines:", lines.slice(0, 10));
 
-    // Start speaking
-    speechSynthesis.speak(utterance);
-  }, [isSupported, cleanTextForTTS, state.selectedVoice, state.speed]);
+        for (const line of lines) {
+          if (!line.trim()) continue;
+
+          console.log(
+            "DEBUG: Processing line:",
+            line.substring(0, 100) + "..."
+          );
+
+          if (line.startsWith("MAIN_TITLE:")) {
+            // Main titles - faster speed, clear pronunciation
+            const titleText = line.replace("MAIN_TITLE:", "").trim();
+            segments.push({
+              text: titleText,
+              speed: (options.speed || state.speed) * 1.15, // 15% faster
+              pause: "long", // Long pause after main titles
+            });
+          } else if (line.startsWith("SUB_TITLE:")) {
+            // Subtitles - slightly faster, medium pause
+            const subtitleText = line.replace("SUB_TITLE:", "").trim();
+            segments.push({
+              text: subtitleText,
+              speed: (options.speed || state.speed) * 1.1, // 10% faster
+              pause: "medium", // Medium pause after subtitles
+            });
+          } else {
+            // Body text - normal speed with longer pause after subtitles
+            const previousSegment = segments[segments.length - 1];
+
+            const pauseType =
+              previousSegment && previousSegment.pause === "medium"
+                ? "long"
+                : "short";
+
+            segments.push({
+              text: line,
+              speed: options.speed || state.speed,
+              pause: pauseType, // Longer pause if following a subtitle
+            });
+          }
+        }
+
+        for (const segment of segments) {
+          segment.text = segment.text
+            .replace(/SUB_TITLE:/g, "")
+            .replace(/MAIN_TITLE:/g, "");
+        }
+
+        return segments;
+      };
+
+      const textSegments = processTextWithSpeeds(cleanText);
+      let currentSegmentIndex = 0;
+
+      const speakSegment = (segmentIndex: number) => {
+        if (segmentIndex >= textSegments.length) {
+          // All segments complete
+          setState((prev) => ({
+            ...prev,
+            isPlaying: false,
+            isPaused: false,
+            currentPosition: 0,
+            progress: 0,
+          }));
+          positionRef.current = 0;
+          options.onEnd?.();
+          return;
+        }
+
+        const segment = textSegments[segmentIndex];
+        let segmentText = segment.text;
+
+        // Add appropriate pauses
+        if (segment.pause === "long") {
+          segmentText += ". . . . . . ."; // Extra long pause after main titles or after subtitles
+        } else if (segment.pause === "medium") {
+          segmentText += ". . . ."; // Medium pause after subtitles
+        } else {
+          segmentText += ". . . ."; // Short pause after body text
+        }
+
+        // Ensure proper punctuation spacing
+        segmentText = segmentText
+          .replace(/\s*([.!?])\s*/g, "$1 ")
+          .replace(/\s*,\s*/g, ", ")
+          .replace(/\s*:\s*/g, ": ")
+          .replace(/\s*;\s*/g, "; ")
+          .replace(/\s+/g, " ")
+          .trim();
+
+        const utterance = new SpeechSynthesisUtterance(segmentText);
+        utteranceRef.current = utterance;
+
+        // Voice selection
+        const currentVoices = speechSynthesis.getVoices();
+        const englishVoices = currentVoices.filter(
+          (voice) =>
+            voice.lang.toLowerCase().startsWith("en-") ||
+            voice.lang.toLowerCase() === "en"
+        );
+
+        let voiceToUse = null;
+        if (
+          state.selectedVoice &&
+          englishVoices.includes(state.selectedVoice)
+        ) {
+          voiceToUse = state.selectedVoice;
+        } else if (englishVoices.length > 0) {
+          voiceToUse = englishVoices[0];
+        }
+
+        if (voiceToUse) {
+          utterance.voice = voiceToUse;
+        }
+
+        if (voiceToUse) {
+          utterance.voice = voiceToUse;
+          console.log("Using voice for segment:", voiceToUse.name);
+        }
+
+        // Configure speech parameters
+        utterance.lang = "en-US";
+        utterance.rate = segment.speed; // Use segment-specific speed
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        // Event handlers
+        utterance.onstart = () => {
+          setState((prev) => ({ ...prev, isPlaying: true, isPaused: false }));
+        };
+
+        utterance.onend = () => {
+          // Move to next segment
+          setTimeout(() => {
+            speakSegment(segmentIndex + 1);
+          }, 100);
+        };
+
+        utterance.onerror = () => {
+          setState((prev) => ({
+            ...prev,
+            isPlaying: false,
+            isPaused: false,
+          }));
+        };
+
+        utterance.onboundary = (event) => {
+          if (event.name === "word") {
+            // Calculate overall progress across all segments
+            const totalText = textSegments.map((s) => s.text).join(" ");
+            const completedText = textSegments
+              .slice(0, segmentIndex)
+              .map((s) => s.text)
+              .join(" ");
+            const currentSegmentProgress =
+              (event.charIndex / segmentText.length) * segment.text.length;
+            const overallProgress =
+              ((completedText.length + currentSegmentProgress) /
+                totalText.length) *
+              100;
+
+            setState((prev) => ({
+              ...prev,
+              currentPosition: completedText.length + event.charIndex,
+              progress: Math.min(overallProgress, 100),
+            }));
+            options.onProgress?.(completedText.length + event.charIndex);
+          }
+        };
+
+        speechSynthesis.speak(utterance);
+      };
+
+      // Start speaking from first segment
+      currentSegmentIndex = 0;
+      speakSegment(0);
+    },
+    [isSupported, cleanTextForTTS, state.selectedVoice, state.speed]
+  );
 
   // Pause speaking
   const pause = useCallback(() => {
     if (!isSupported()) return;
     speechSynthesis.pause();
-    setState(prev => ({ ...prev, isPaused: true, isPlaying: false }));
+    setState((prev) => ({ ...prev, isPaused: true, isPlaying: false }));
   }, [isSupported]);
 
   // Resume speaking
   const resume = useCallback(() => {
     if (!isSupported()) return;
     speechSynthesis.resume();
-    setState(prev => ({ ...prev, isPaused: false, isPlaying: true }));
+    setState((prev) => ({ ...prev, isPaused: false, isPlaying: true }));
   }, [isSupported]);
 
   // Stop speaking
   const stop = useCallback(() => {
     if (!isSupported()) return;
     speechSynthesis.cancel();
-    setState(prev => ({ 
-      ...prev, 
-      isPlaying: false, 
-      isPaused: false, 
+    setState((prev) => ({
+      ...prev,
+      isPlaying: false,
+      isPaused: false,
       currentPosition: 0,
-      progress: 0
+      progress: 0,
     }));
     positionRef.current = 0;
   }, [isSupported]);
@@ -228,23 +446,26 @@ export const useTTS = () => {
 
   // Set voice
   const setVoice = useCallback((voice: SpeechSynthesisVoice) => {
-    setState(prev => ({ ...prev, selectedVoice: voice }));
+    setState((prev) => ({ ...prev, selectedVoice: voice }));
   }, []);
 
   // Set speed
-  const setSpeed = useCallback((speed: number) => {
-    setState(prev => ({ ...prev, speed }));
-    
-    // If currently speaking, restart with new speed
-    if (state.isPlaying && utteranceRef.current) {
-      const remainingText = textRef.current.slice(positionRef.current);
-      speechSynthesis.cancel();
-      
-      setTimeout(() => {
-        speak(remainingText, { speed });
-      }, 100);
-    }
-  }, [state.isPlaying, speak]);
+  const setSpeed = useCallback(
+    (speed: number) => {
+      setState((prev) => ({ ...prev, speed }));
+
+      // If currently speaking, restart with new speed
+      if (state.isPlaying && utteranceRef.current) {
+        const remainingText = textRef.current.slice(positionRef.current);
+        speechSynthesis.cancel();
+
+        setTimeout(() => {
+          speak(remainingText, { speed });
+        }, 100);
+      }
+    },
+    [state.isPlaying, speak]
+  );
 
   return {
     ...state,
@@ -255,6 +476,6 @@ export const useTTS = () => {
     toggle,
     setVoice,
     setSpeed,
-    isSupported: isSupported()
+    isSupported: isSupported(),
   };
 };
