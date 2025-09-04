@@ -65,7 +65,7 @@ export const useTTS = () => {
           ...prev,
           availableVoices: voices,
           selectedVoice: prev.selectedVoice || preferredVoice,
-          speed: 1 // Lock to 1x speed
+          speed: prev.speed || 1 // Allow variable speed, default to 1x
         }));
       }
     };
@@ -106,9 +106,9 @@ export const useTTS = () => {
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utteranceRef.current = utterance;
 
-    // Configure utterance - locked to 1x speed
+    // Configure utterance with current speed
     utterance.voice = options.voice || state.selectedVoice;
-    utterance.rate = 1.0; // Fixed at 1x speed
+    utterance.rate = options.speed || state.speed;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 

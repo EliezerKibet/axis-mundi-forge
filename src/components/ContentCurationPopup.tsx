@@ -15,44 +15,87 @@ const ContentCurationPopup = ({ isOpen, onClose, selectedInterest }: ContentCura
 
   if (!isOpen) return null;
 
-  // Map contact form interests to article categories
+  // Enhanced article selection with specific article targeting
   const getArticlesByInterest = (interest: string) => {
-    const categoryMap: { [key: string]: string[] } = {
-      "Quantum Computing": ["Quantum Computing"],
-      "Resilient AI Systems": ["Artificial Intelligence"],
-      "Neural Commerce Platforms": ["Artificial Intelligence", "Emerging Technology"]
+    const interestMapping: { [key: string]: { primary: string[], secondary: string[], articles: string[] } } = {
+      "Quantum Computing": {
+        primary: ["Quantum Computing"],
+        secondary: ["Emerging Technology"],
+        articles: [
+          "quantum-drug-discovery-2030",
+          "quantum-internet-unhackable-communications", 
+          "neuromorphic-computing-brain-chips"
+        ]
+      },
+      
+      "Resilient AI Systems": {
+        primary: ["Artificial Intelligence"], 
+        secondary: ["Emerging Technology"],
+        articles: [
+          "ai-carbon-footprint-hidden-cost",
+          "ai-paradox-dumber-smarter",
+          "cognitive-overfitting-bigger-models"
+        ]
+      },
+      
+      "Neural Commerce Platforms": {
+        primary: ["Emerging Technology", "Web3 & Decentralization"],
+        secondary: ["Artificial Intelligence"],
+        articles: [
+          "neuromorphic-computing-brain-chips",
+          "dao-comeback-2024", 
+          "ai-paradox-dumber-smarter"
+        ]
+      }
     };
-
-    const categories = categoryMap[interest] || ["Emerging Technology"];
     
-    // Get articles from these categories, limit to 3
-    const filteredArticles = blogArticles.filter(article => 
-      categories.includes(article.category)
-    ).slice(0, 3);
+    const mapping = interestMapping[interest];
+    if (!mapping) return blogArticles.slice(0, 3);
     
-    // If we need more articles, fill with other articles
-    if (filteredArticles.length < 3) {
-      const remainingArticles = blogArticles.filter(article => 
-        !filteredArticles.some(filtered => filtered.id === article.id)
-      );
-      filteredArticles.push(...remainingArticles.slice(0, 3 - filteredArticles.length));
+    // Try to get specific articles first, then fallback to category filtering
+    const specificArticles = blogArticles.filter(article => 
+      mapping.articles.includes(article.slug)
+    );
+    
+    if (specificArticles.length >= 3) {
+      return specificArticles.slice(0, 3);
     }
+    
+    // Fallback: category-based selection with preference for variety
+    const categoryArticles = blogArticles.filter(article =>
+      mapping.primary.includes(article.category) || 
+      mapping.secondary.includes(article.category)
+    );
+    
+    return categoryArticles.slice(0, 3);
+  };
 
-    return filteredArticles;
+  // Generate dynamic tags based on selected articles
+  const generateArticleTags = (articles: any[], interest: string) => {
+    const tagMap: { [key: string]: string[] } = {
+      "quantum-computing": ["Quantum Systems", "Drug Discovery", "Enterprise Solutions"],
+      "quantum-internet": ["Quantum Networks", "Cryptography", "Security"],
+      "ai-carbon-footprint": ["Environmental AI", "Green Computing", "Sustainability"],
+      "ai-paradox": ["AGI Research", "Machine Learning", "AI Safety"],
+      "ai-alignment": ["AI Ethics", "Safety Research", "Alignment"],
+      "cognitive-overfitting": ["AI Limitations", "Model Training", "Benchmarks"],
+      "dao-comeback": ["Decentralization", "Governance", "Web3"],
+      "web3-future": ["Blockchain", "Smart Contracts", "DeFi"],
+      "neuromorphic": ["Brain Computing", "Energy Efficiency", "Hardware"]
+    };
+    
+    const relevantTags = new Set<string>();
+    articles.forEach(article => {
+      const articleKey = article.slug.split('-').slice(0, 2).join('-');
+      const tags = tagMap[articleKey] || ["Advanced Tech", "Innovation", "Research"];
+      tags.forEach(tag => relevantTags.add(tag));
+    });
+    
+    return Array.from(relevantTags).slice(0, 3);
   };
 
   const articles = getArticlesByInterest(selectedInterest);
-
-  const getInterestTags = (interest: string) => {
-    const tagMap: { [key: string]: string[] } = {
-      "Quantum Computing": ["QUANTUM COMPUTING"],
-      "Resilient AI Systems": ["AI SYSTEMS"],
-      "Neural Commerce Platforms": ["AI SYSTEMS", "WEB3 & DECENTRALIZATION"]
-    };
-    return tagMap[interest] || ["EMERGING TECHNOLOGY"];
-  };
-
-  const interestTags = getInterestTags(selectedInterest);
+  const dynamicTags = generateArticleTags(articles, selectedInterest);
 
   const handleArticleClick = (slug: string) => {
     navigate(`/blog/${slug}`);
@@ -105,16 +148,15 @@ const ContentCurationPopup = ({ isOpen, onClose, selectedInterest }: ContentCura
             Based on your selected topics, we've found these relevant articles
           </p>
           
-          {/* Interest Tags */}
+          {/* Dynamic Tags */}
           <div className="flex flex-wrap gap-3">
-            {interestTags.map((tag, index) => (
-              <div 
+            {dynamicTags.map((tag, index) => (
+              <span 
                 key={index}
-                className={`flex items-center gap-2 px-3 py-1 text-xs border ${getCategoryColor(tag)}`}
+                className="px-3 py-1 bg-primary/20 border border-primary/30 text-primary text-xs tracking-wide"
               >
-                <span className="w-2 h-2 bg-current rounded-full"></span>
-                <span className="font-medium">{tag}</span>
-              </div>
+                {tag.toUpperCase()}
+              </span>
             ))}
           </div>
         </div>
@@ -124,30 +166,35 @@ const ContentCurationPopup = ({ isOpen, onClose, selectedInterest }: ContentCura
           {articles.map((article, index) => (
             <div 
               key={article.id}
-              className={`${index === 2 && articles.length === 3 ? 'md:col-span-2' : ''} bg-[#0f1327] border border-primary/20 p-6 hover:border-primary/40 transition-all duration-300 cursor-pointer group`}
+              className={`${index === 2 && articles.length === 3 ? 'md:col-span-2' : ''} bg-card/50 border-l-4 border-primary p-6 hover:bg-primary/5 transition-all duration-300 cursor-pointer group`}
               onClick={() => handleArticleClick(article.slug)}
             >
               {/* Article Category Badge */}
-              <div className={`inline-flex items-center gap-2 px-3 py-1 text-xs border mb-4 ${getCategoryColor(formatCategoryForBadge(article.category))}`}>
-                <span className="w-2 h-2 bg-current rounded-full"></span>
-                <span className="font-medium">{formatCategoryForBadge(article.category)}</span>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="category-badge text-xs text-primary border border-primary/30 px-2 py-1 bg-primary/10">
+                  {article.category}
+                </span>
+                <span className="text-xs text-text-secondary">{article.readingTime}</span>
               </div>
               
               {/* Article Title */}
-              <h3 className="text-lg font-light text-white mb-3 group-hover:text-primary transition-colors">
+              <h3 className="text-lg font-light text-text-primary mb-2 line-clamp-2 group-hover:text-primary transition-colors">
                 {article.title}
               </h3>
               
               {/* Article Description */}
-              <p className="text-text-secondary text-sm leading-relaxed mb-4">
+              <p className="text-sm text-text-secondary mb-4 line-clamp-2">
                 {article.preview}
               </p>
               
               {/* Article Metadata */}
-              <div className="flex items-center gap-4 text-xs text-primary">
-                <span>{article.readingTime}</span>
-                <span>•</span>
-                <span>{article.date}</span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-primary">
+                  {article.date} • by {article.author}
+                </span>
+                <span className="text-primary text-sm font-medium hover:text-primary-accent">
+                  READ ARTICLE →
+                </span>
               </div>
             </div>
           ))}
