@@ -310,7 +310,7 @@ const Contact = () => {
                     <img
                       src="/instagram.svg"
                       alt="Instagram"
-                      className="w-11 h-11"
+                      className="w-9 h-9"
                     />
                   </a>
                 </div>
