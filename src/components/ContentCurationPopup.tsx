@@ -1,7 +1,8 @@
-import { X, Lightbulb } from "lucide-react";
+import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { blogArticles } from "../data/blogArticles";
+import { Article } from "../types/article";
+import { useFeaturedArticles } from "../hooks/useArticles";
 
 interface ContentCurationPopupProps {
   isOpen: boolean;
@@ -23,133 +24,137 @@ interface QuestionResponse {
   recommendedArticles: RecommendedArticle[];
 }
 
+const generateArticleTags = (articles: Article[]): string[] => {
+  const tagMap: { [key: string]: string[] } = {
+    "quantum-computing": ["Quantum Systems", "Drug Discovery", "Enterprise Solutions"],
+    "quantum-internet": ["Quantum Networks", "Cryptography", "Security"],
+    "ai-carbon-footprint": ["Environmental AI", "Green Computing", "Sustainability"],
+    "ai-paradox": ["AGI Research", "Machine Learning", "AI Safety"],
+    "ai-alignment": ["AI Ethics", "Safety Research", "Alignment"],
+    "cognitive-overfitting": ["AI Limitations", "Model Training", "Benchmarks"],
+    "dao-comeback": ["Decentralization", "Governance", "Web3"],
+    "web3-future": ["Blockchain", "Smart Contracts", "DeFi"],
+    "neuromorphic": ["Brain Computing", "Energy Efficiency", "Hardware"]
+  };
+  
+  const relevantTags = new Set<string>();
+  articles.forEach(article => {
+    const articleKey = article.slug.split('-').slice(0, 2).join('-');
+    const tags = tagMap[articleKey] || ["Advanced Tech", "Innovation", "Research"];
+    tags.forEach(tag => relevantTags.add(tag));
+  });
+  
+  return Array.from(relevantTags).slice(0, 3);
+};
+
+const getArticlesByInterest = (selectedInterest: string, availableArticles: Article[]): Article[] => {
+  const interestMapping: { [key: string]: { primary: string[], secondary: string[], articles: string[] } } = {
+    "Quantum Computing": {
+      primary: ["Quantum Computing"],
+      secondary: ["Emerging Technology"],
+      articles: [
+        "quantum-drug-discovery-2030",
+        "quantum-internet-unhackable-communications", 
+        "neuromorphic-computing-brain-chips"
+      ]
+    },
+    
+    "Resilient AI Systems": {
+      primary: ["Artificial Intelligence"], 
+      secondary: ["Emerging Technology"],
+      articles: [
+        "ai-carbon-footprint-hidden-cost",
+        "ai-paradox-dumber-smarter",
+        "cognitive-overfitting-bigger-models"
+      ]
+    },
+    
+    "Neural Commerce Platforms": {
+      primary: ["Emerging Technology", "Web3 & Decentralization"],
+      secondary: ["Artificial Intelligence"],
+      articles: [
+        "neuromorphic-computing-brain-chips",
+        "dao-comeback-2024", 
+        "ai-paradox-dumber-smarter"
+      ]
+    }
+  };
+  
+  const mapping = interestMapping[selectedInterest];
+  if (!mapping || availableArticles.length === 0) return availableArticles.slice(0, 3);
+
+  // Try to get specific articles first, then fallback to category filtering
+  const specificArticles = availableArticles.filter(article => 
+    mapping.articles.includes(article.slug)
+  );
+
+  if (specificArticles.length >= 3) {
+    return specificArticles.slice(0, 3);
+  }
+
+  // Fallback: category-based selection with preference for variety
+  const categoryArticles = availableArticles.filter(article =>
+    mapping.primary.includes(article.category) || 
+    mapping.secondary.includes(article.category)
+  );
+
+  return categoryArticles.slice(0, 3);
+};
+
+interface QuestionResponse {
+  answer: string;
+  recommendedArticles: RecommendedArticle[];
+}
+
+const generateContextualResponse = (question: string, interest: string, articles: Article[]): QuestionResponse => {
+  const responses: { [key: string]: { answer: string } } = {
+    "Quantum Computing": {
+      answer: "Based on your question, we've identified several cutting-edge technologies that address this challenge. Our research shows that combining quantum computing with advanced optimization algorithms can create robust solutions for modern enterprise needs. The articles below provide detailed insights into implementation strategies and real-world case studies.",
+    },
+    "Resilient AI Systems": {
+      answer: "Your question touches on critical aspects of AI system design and implementation. Our analysis indicates that building resilient, production-ready AI systems requires careful consideration of scalability, safety, and environmental impact. The recommended articles explore proven strategies for addressing these challenges.",
+    },
+    "Neural Commerce Platforms": {
+      answer: "This is an excellent question about the intersection of neural computing and commercial applications. Our research shows that neuromorphic systems and decentralized platforms are creating new opportunities for intelligent commerce solutions. The articles below detail specific implementations and emerging trends.",
+    }
+  };
+  
+  const responseTemplate = responses[interest] || responses["Quantum Computing"];
+  
+  // Select 2-3 most relevant articles
+  const numArticles = Math.min(3, Math.max(2, articles.length));
+  const selectedArticles = articles.slice(0, numArticles);
+  
+  return {
+    answer: responseTemplate.answer,
+    recommendedArticles: selectedArticles.map(article => ({
+      title: article.title,
+      category: article.category,
+      description: article.preview && article.preview.length > 80 ? 
+        article.preview.substring(0, 80) + "..." : 
+        article.preview || article.excerpt || "No description available",
+      readTime: article.readingTime || article.readTime,
+      date: article.date,
+      slug: article.slug
+    }))
+  };
+};
+
 const ContentCurationPopup = ({ isOpen, onClose, selectedInterest }: ContentCurationPopupProps) => {
   const navigate = useNavigate();
+  const { articles: availableArticles, loading } = useFeaturedArticles(10);
+  const relevantArticles = getArticlesByInterest(selectedInterest, availableArticles);
+  const dynamicTags = generateArticleTags(relevantArticles);
+  
   const [userQuestion, setUserQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [questionResponse, setQuestionResponse] = useState<QuestionResponse | null>(null);
 
   if (!isOpen) return null;
 
-  // Enhanced article selection with specific article targeting
-  const getArticlesByInterest = (interest: string) => {
-    const interestMapping: { [key: string]: { primary: string[], secondary: string[], articles: string[] } } = {
-      "Quantum Computing": {
-        primary: ["Quantum Computing"],
-        secondary: ["Emerging Technology"],
-        articles: [
-          "quantum-drug-discovery-2030",
-          "quantum-internet-unhackable-communications", 
-          "neuromorphic-computing-brain-chips"
-        ]
-      },
-      
-      "Resilient AI Systems": {
-        primary: ["Artificial Intelligence"], 
-        secondary: ["Emerging Technology"],
-        articles: [
-          "ai-carbon-footprint-hidden-cost",
-          "ai-paradox-dumber-smarter",
-          "cognitive-overfitting-bigger-models"
-        ]
-      },
-      
-      "Neural Commerce Platforms": {
-        primary: ["Emerging Technology", "Web3 & Decentralization"],
-        secondary: ["Artificial Intelligence"],
-        articles: [
-          "neuromorphic-computing-brain-chips",
-          "dao-comeback-2024", 
-          "ai-paradox-dumber-smarter"
-        ]
-      }
-    };
-    
-    const mapping = interestMapping[interest];
-    if (!mapping) return blogArticles.slice(0, 3);
-    
-    // Try to get specific articles first, then fallback to category filtering
-    const specificArticles = blogArticles.filter(article => 
-      mapping.articles.includes(article.slug)
-    );
-    
-    if (specificArticles.length >= 3) {
-      return specificArticles.slice(0, 3);
-    }
-    
-    // Fallback: category-based selection with preference for variety
-    const categoryArticles = blogArticles.filter(article =>
-      mapping.primary.includes(article.category) || 
-      mapping.secondary.includes(article.category)
-    );
-    
-    return categoryArticles.slice(0, 3);
-  };
-
-  // Generate dynamic tags based on selected articles
-  const generateArticleTags = (articles: any[], interest: string) => {
-    const tagMap: { [key: string]: string[] } = {
-      "quantum-computing": ["Quantum Systems", "Drug Discovery", "Enterprise Solutions"],
-      "quantum-internet": ["Quantum Networks", "Cryptography", "Security"],
-      "ai-carbon-footprint": ["Environmental AI", "Green Computing", "Sustainability"],
-      "ai-paradox": ["AGI Research", "Machine Learning", "AI Safety"],
-      "ai-alignment": ["AI Ethics", "Safety Research", "Alignment"],
-      "cognitive-overfitting": ["AI Limitations", "Model Training", "Benchmarks"],
-      "dao-comeback": ["Decentralization", "Governance", "Web3"],
-      "web3-future": ["Blockchain", "Smart Contracts", "DeFi"],
-      "neuromorphic": ["Brain Computing", "Energy Efficiency", "Hardware"]
-    };
-    
-    const relevantTags = new Set<string>();
-    articles.forEach(article => {
-      const articleKey = article.slug.split('-').slice(0, 2).join('-');
-      const tags = tagMap[articleKey] || ["Advanced Tech", "Innovation", "Research"];
-      tags.forEach(tag => relevantTags.add(tag));
-    });
-    
-    return Array.from(relevantTags).slice(0, 3);
-  };
-
-  const articles = getArticlesByInterest(selectedInterest);
-  const dynamicTags = generateArticleTags(articles, selectedInterest);
-
   const handleArticleClick = (slug: string) => {
     navigate(`/blog/${slug}`);
     onClose();
-  };
-
-  const generateContextualResponse = (question: string, interest: string, articles: any[]): QuestionResponse => {
-    const responses: { [key: string]: { answer: string } } = {
-      "Quantum Computing": {
-        answer: "Based on your question, we've identified several cutting-edge technologies that address this challenge. Our research shows that combining quantum computing with advanced optimization algorithms can create robust solutions for modern enterprise needs. The articles below provide detailed insights into implementation strategies and real-world case studies.",
-      },
-      "Resilient AI Systems": {
-        answer: "Your question touches on critical aspects of AI system design and implementation. Our analysis indicates that building resilient, production-ready AI systems requires careful consideration of scalability, safety, and environmental impact. The recommended articles explore proven strategies for addressing these challenges.",
-      },
-      "Neural Commerce Platforms": {
-        answer: "This is an excellent question about the intersection of neural computing and commercial applications. Our research shows that neuromorphic systems and decentralized platforms are creating new opportunities for intelligent commerce solutions. The articles below detail specific implementations and emerging trends.",
-      }
-    };
-    
-    const responseTemplate = responses[interest] || responses["Quantum Computing"];
-    
-    // Select 2-3 most relevant articles
-    const numArticles = Math.min(3, Math.max(2, articles.length));
-    const selectedArticles = articles.slice(0, numArticles);
-    
-    return {
-      answer: responseTemplate.answer,
-      recommendedArticles: selectedArticles.map((article: any) => ({
-        title: article.title,
-        category: article.category,
-        description: article.preview.length > 80 ? 
-          article.preview.substring(0, 80) + "..." : 
-          article.preview,
-        readTime: article.readingTime,
-        date: article.date,
-        slug: article.slug
-      }))
-    };
   };
 
   const handleAskQuestion = async () => {
@@ -162,7 +167,7 @@ const ContentCurationPopup = ({ isOpen, onClose, selectedInterest }: ContentCura
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Generate contextual response based on user's interest and available articles
-      const response = generateContextualResponse(userQuestion, selectedInterest, articles);
+      const response = generateContextualResponse(userQuestion, selectedInterest, relevantArticles);
       
       setQuestionResponse(response);
       setUserQuestion(""); // Clear input after successful submission
@@ -170,11 +175,11 @@ const ContentCurationPopup = ({ isOpen, onClose, selectedInterest }: ContentCura
       console.error("Failed to process question:", error);
       setQuestionResponse({
         answer: "I apologize, but I'm unable to process your question at the moment. Please try again later.",
-        recommendedArticles: articles.slice(0, 2).map((article: any) => ({
+        recommendedArticles: relevantArticles.slice(0, 2).map(article => ({
           title: article.title,
           category: article.category,
-          description: article.preview.substring(0, 80) + "...",
-          readTime: article.readingTime,
+          description: (article.preview || article.excerpt || "").substring(0, 80) + "...",
+          readTime: article.readingTime || article.readTime,
           date: article.date,
           slug: article.slug
         }))
@@ -182,26 +187,6 @@ const ContentCurationPopup = ({ isOpen, onClose, selectedInterest }: ContentCura
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors: { [key: string]: string } = {
-      "QUANTUM COMPUTING": "bg-primary/20 border-primary text-primary",
-      "AI SYSTEMS": "bg-blue-500/20 border-blue-500 text-blue-500",
-      "WEB3 & DECENTRALIZATION": "bg-green-500/20 border-green-500 text-green-500",
-      "EMERGING TECHNOLOGY": "bg-purple-500/20 border-purple-500 text-purple-500"
-    };
-    return colors[category] || "bg-primary/20 border-primary text-primary";
-  };
-
-  const formatCategoryForBadge = (category: string) => {
-    const categoryMap: { [key: string]: string } = {
-      "Quantum Computing": "QUANTUM COMPUTING",
-      "Artificial Intelligence": "AI SYSTEMS",
-      "Web3 & Decentralization": "WEB3 & DECENTRALIZATION",
-      "Emerging Technology": "EMERGING TECHNOLOGY"
-    };
-    return categoryMap[category] || category.toUpperCase();
   };
 
   return (
@@ -219,7 +204,7 @@ const ContentCurationPopup = ({ isOpen, onClose, selectedInterest }: ContentCura
         <div className="mb-8">
           <h2 className="text-2xl font-light text-white mb-3">Articles Curated for Your Interests</h2>
           <p className="text-text-secondary text-sm mb-6">
-            Based on your selected topics, we've found these relevant articles
+            Based on your selected topics: <span className="text-primary">{selectedInterest}</span>
           </p>
           
           {/* Dynamic Tags */}
@@ -237,41 +222,62 @@ const ContentCurationPopup = ({ isOpen, onClose, selectedInterest }: ContentCura
 
         {/* Articles Grid */}
         <div className="articles-grid grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {articles.map((article) => (
-            <div 
-              key={article.id}
-              className="article-card bg-card/50 border-l-4 border-primary p-6 hover:bg-primary/5 transition-all duration-300 cursor-pointer group h-fit"
-              onClick={() => handleArticleClick(article.slug)}
-            >
-              {/* Article Category Badge */}
-              <div className="flex items-center gap-2 mb-3">
-                <span className="category-badge text-xs text-primary border border-primary/30 px-2 py-1 bg-primary/10">
-                  {article.category}
-                </span>
-                <span className="text-xs text-text-secondary">{article.readingTime}</span>
+          {loading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="bg-card/50 border-l-4 border-primary p-6 animate-pulse">
+                <div className="h-4 bg-primary/20 rounded mb-3 w-1/3"></div>
+                <div className="h-6 bg-text-secondary/20 rounded mb-4"></div>
+                <div className="space-y-2 mb-4">
+                  <div className="h-3 bg-text-secondary/20 rounded"></div>
+                  <div className="h-3 bg-text-secondary/20 rounded w-4/5"></div>
+                </div>
+                <div className="h-4 bg-primary/20 rounded w-1/2"></div>
               </div>
-              
-              {/* Article Title */}
-              <h3 className="text-lg font-light text-text-primary mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                {article.title}
-              </h3>
-              
-              {/* Article Description */}
-              <p className="text-sm text-text-secondary mb-4 line-clamp-3">
-                {article.preview}
+            ))
+          ) : relevantArticles.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <div className="text-text-secondary mb-4">📝 No articles available</div>
+              <p className="text-text-secondary text-sm">
+                Connect to Supabase to load articles for this interest area.
               </p>
-              
-              {/* Article Metadata */}
-              <div className="flex items-center justify-between mt-auto">
-                <span className="text-xs text-primary">
-                  {article.date} • by {article.author}
-                </span>
-                <span className="text-primary text-sm font-medium hover:text-primary-accent">
-                  READ ARTICLE →
-                </span>
-              </div>
             </div>
-          ))}
+          ) : (
+            relevantArticles.map((article) => (
+              <div 
+                key={article.id}
+                className="article-card bg-card/50 border-l-4 border-primary p-6 hover:bg-primary/5 transition-all duration-300 cursor-pointer group h-fit"
+                onClick={() => handleArticleClick(article.slug)}
+              >
+                {/* Article Category Badge */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="category-badge text-xs text-primary border border-primary/30 px-2 py-1 bg-primary/10">
+                    {article.category}
+                  </span>
+                  <span className="text-xs text-text-secondary">{article.readingTime || article.readTime}</span>
+                </div>
+                
+                {/* Article Title */}
+                <h3 className="text-lg font-light text-text-primary mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                  {article.title}
+                </h3>
+                
+                {/* Article Description */}
+                <p className="text-sm text-text-secondary mb-4 line-clamp-3">
+                  {article.preview || article.excerpt || "No description available"}
+                </p>
+                
+                {/* Article Metadata */}
+                <div className="flex items-center justify-between mt-auto">
+                  <span className="text-xs text-primary">
+                    {article.date} • by {article.author}
+                  </span>
+                  <span className="text-primary text-sm font-medium hover:text-primary-accent">
+                    READ ARTICLE →
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Question Section */}
@@ -373,7 +379,6 @@ const ContentCurationPopup = ({ isOpen, onClose, selectedInterest }: ContentCura
           )}
         </div>
 
-        
         {/* Footer */}
         <div className="mt-6 text-center">
           <button 

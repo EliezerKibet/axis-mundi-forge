@@ -15,14 +15,14 @@ const Contact = () => {
     identifier: "",
     email: "",
     subject: "",
-    interest: "",
+    interests: [] as string[],
     message: "",
   });
 
   const [userData, setUserData] = useState({
     name: "",
     email: "",
-    interest: "",
+    interests: [] as string[],
   });
 
   const [result, setResult] = useState("");
@@ -41,7 +41,7 @@ const Contact = () => {
       email: formData.email,
       subject: formData.subject,
       message: formData.message,
-      interest: formData.interest,
+      interests: formData.interests,
     };
 
     try {
@@ -70,14 +70,14 @@ const Contact = () => {
         const currentUserData = {
           name: formData.identifier,
           email: formData.email,
-          interest: formData.interest,
+          interests: formData.interests,
         };
 
         setUserData(currentUserData);
-        setSelectedInterest(formData.interest);
+        setSelectedInterest(formData.interests[0] || "");
 
-        if (formData.interest) {
-          //data  for name , email and interest (done in sendWebhookResponse  )
+        if (formData.interests.length > 0) {
+          //data  for name , email and interests (done in sendWebhookResponse  )
           await sendWebhookResponse(currentUserData);
         }
 
@@ -86,7 +86,7 @@ const Contact = () => {
           email: "",
           subject: "",
           message: "",
-          interest: "",
+          interests: [],
         });
 
         // Hide success message after 3 seconds
@@ -117,12 +117,21 @@ const Contact = () => {
     });
   };
 
-  const handleInterestChange = (value: string) => {
-    setFormData({
-      ...formData,
-      interest: value,
-    });
-    setSelectedInterest(value);
+  const handleInterestChange = (interest: string, checked: boolean) => {
+    const currentInterests = formData.interests || [];
+    if (checked) {
+      if (currentInterests.length < 2) {
+        setFormData({
+          ...formData,
+          interests: [...currentInterests, interest]
+        });
+      }
+    } else {
+      setFormData({
+        ...formData,
+        interests: currentInterests.filter(i => i !== interest)
+      });
+    }
   };
 
   const handleEmailPopupClose = () => {
@@ -202,37 +211,37 @@ const Contact = () => {
 
                 <div>
                   <label className="block text-sm text-text-secondary tracking-wider mb-3">
-                    INTEREST
+                    INTERESTS (Select up to 2)
                   </label>
-                  <Select
-                    value={formData.interest}
-                    onValueChange={handleInterestChange}
-                    required
-                  >
-                    <SelectTrigger className="w-full bg-transparent border border-text-secondary/30 px-4 py-3 text-text-primary focus:border-primary focus:outline-none transition-colors">
-                      <SelectValue placeholder="Select your area of interest" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#1a1f3a] border border-text-secondary/30">
-                      <SelectItem
-                        value="Quantum Computing"
-                        className="text-text-primary hover:bg-primary/20"
-                      >
-                        Quantum Computing
-                      </SelectItem>
-                      <SelectItem
-                        value="Resilient AI Systems"
-                        className="text-text-primary hover:bg-primary/20"
-                      >
-                        Resilient AI Systems
-                      </SelectItem>
-                      <SelectItem
-                        value="Neural Commerce Platforms"
-                        className="text-text-primary hover:bg-primary/20"
-                      >
-                        Neural Commerce Platforms
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-3">
+                    {[
+                      "Quantum Computing",
+                      "Resilient AI Systems", 
+                      "Neural Commerce Platforms",
+                      "Enterprise Solutions",
+                      "Research Collaboration"
+                    ].map((interest) => (
+                      <label key={interest} className="flex items-center space-x-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.interests?.includes(interest) || false}
+                          onChange={(e) => handleInterestChange(interest, e.target.checked)}
+                          disabled={!formData.interests?.includes(interest) && (formData.interests?.length || 0) >= 2}
+                          className="w-4 h-4 text-primary bg-transparent border border-text-secondary/30 rounded focus:ring-primary focus:ring-2"
+                        />
+                        <span className={`text-sm transition-colors ${
+                          !formData.interests?.includes(interest) && (formData.interests?.length || 0) >= 2
+                            ? 'text-text-secondary/50'
+                            : 'text-text-primary hover:text-primary'
+                        }`}>
+                          {interest}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  {(formData.interests?.length || 0) >= 2 && (
+                    <p className="text-xs text-primary mt-2">Maximum 2 interests selected</p>
+                  )}
                 </div>
 
                 <div>
@@ -326,7 +335,11 @@ const Contact = () => {
         onClose={closePopups}
         onSubscribe={handleEmailPopupClose}
         onDecline={handleEmailPopupClose}
-        userData={userData}
+        userData={{
+          name: userData.name,
+          email: userData.email,
+          interest: selectedInterest
+        }}
       />
 
       <ContentCurationPopup

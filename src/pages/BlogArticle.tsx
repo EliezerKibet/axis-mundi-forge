@@ -1,49 +1,45 @@
 import { useParams, Link } from "react-router-dom";
 import { Calendar, Clock, User, ArrowLeft } from "lucide-react";
-import { useEffect } from "react";
-import { blogArticles } from "../data/blogArticles";
+import { useArticle } from "../hooks/useArticles";
 import BlogSidebar from "../components/BlogSidebar";
-import TTSControls from "../components/TTSControls";
 import QuantumCircuit from "../components/QuantumCircuit";
 
 const BlogArticle = () => {
   const { slug } = useParams<{ slug: string }>();
-  const article = blogArticles.find((article) => article.slug === slug);
+  const { article, loading, error } = useArticle(slug || '');
 
-  // Add keyboard shortcuts for TTS
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle if not in an input field
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      switch (e.key) {
-        case ' ':
-          e.preventDefault();
-          // TTS play/pause will be handled by the TTSControls component
-          const playButton = document.querySelector('[aria-label="Play"], [aria-label="Pause"]') as HTMLButtonElement;
-          if (playButton) playButton.click();
-          break;
-        case 'Escape':
-          // TTS stop will be handled by the TTSControls component
-          const stopButton = document.querySelector('[aria-label="Stop"]') as HTMLButtonElement;
-          if (stopButton) stopButton.click();
-          break;
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  if (!article) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background tech-grid pt-20">
-        <div className="max-w-4xl mx-auto px-6 py-20">
+        <div className="max-w-6xl mx-auto px-6 py-20">
+          <div className="animate-pulse">
+            <div className="h-8 bg-text-secondary/20 rounded mb-8 w-1/3"></div>
+            <div className="h-16 bg-text-secondary/20 rounded mb-4"></div>
+            <div className="h-4 bg-text-secondary/20 rounded mb-8 w-1/2"></div>
+            <div className="space-y-4">
+              {Array.from({ length: 15 }).map((_, i) => (
+                <div key={i} className="h-4 bg-text-secondary/20 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !article) {
+    return (
+      <div className="min-h-screen bg-background tech-grid pt-20">
+        <div className="max-w-4xl mx-auto px-6 py-20 text-center">
           <h1 className="text-4xl font-light text-text-primary mb-4">
             Article Not Found
           </h1>
+          <p className="text-text-secondary mb-8">
+            {error || "The article you're looking for doesn't exist or hasn't been loaded yet."}
+          </p>
+          <p className="text-text-secondary text-sm mb-8">
+            Connect to Supabase to enable dynamic article loading.
+          </p>
           <Link to="/blog" className="text-primary hover:text-primary-accent">
             ← Back to Blog
           </Link>
@@ -168,14 +164,6 @@ const BlogArticle = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Article Content */}
           <div className="lg:col-span-2">
-            {/* TTS Controls */}
-            <div className="mb-8">
-              <TTSControls 
-                content={article.content}
-                title={article.title}
-                className="sticky top-20 z-40"
-              />
-            </div>
 
             {/* Quantum Circuit Visualization (for quantum article) */}
             {article.slug === "quantum-computing-enterprise" && (
@@ -241,7 +229,7 @@ const BlogArticle = () => {
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <BlogSidebar currentArticle={article} />
+            <BlogSidebar currentSlug={article.slug} />
           </div>
         </div>
       </div>

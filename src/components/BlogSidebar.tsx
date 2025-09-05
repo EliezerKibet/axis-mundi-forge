@@ -1,15 +1,13 @@
-import { blogArticles, blogCategories, BlogArticle } from '../data/blogArticles';
 import { Link } from 'react-router-dom';
+import { useFeaturedArticles } from '../hooks/useArticles';
+import { ARTICLE_CATEGORIES } from '../types/article';
 
 interface BlogSidebarProps {
-  currentArticle?: BlogArticle;
+  currentSlug?: string;
 }
 
-const BlogSidebar = ({ currentArticle }: BlogSidebarProps) => {
-  // Filter out current article from recent posts
-  const recentPosts = blogArticles.filter(article => 
-    currentArticle ? article.id !== currentArticle.id : true
-  ).slice(0, 3);
+const BlogSidebar = ({ currentSlug }: BlogSidebarProps) => {
+  const { articles: recentPosts, loading } = useFeaturedArticles(5);
 
   return (
     <div className="space-y-8">
@@ -19,22 +17,36 @@ const BlogSidebar = ({ currentArticle }: BlogSidebarProps) => {
           Recent Posts
         </h3>
         <div className="space-y-4">
-          {recentPosts.map((post) => (
-            <Link 
-              key={post.id}
-              to={`/blog/${post.slug}`}
-              className="block group"
-            >
-              <div className="pb-4 border-b border-primary/10 last:border-b-0 last:pb-0">
-                <h4 className="text-text-primary group-hover:text-primary-accent transition-colors mb-2 leading-snug">
-                  {post.title}
-                </h4>
-                <time className="text-sm text-text-secondary">
-                  {post.date}
-                </time>
+          {loading ? (
+            Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="animate-pulse">
+                <div className="h-4 bg-text-secondary/20 rounded mb-2"></div>
+                <div className="h-3 bg-text-secondary/20 rounded w-3/4"></div>
               </div>
-            </Link>
-          ))}
+            ))
+          ) : recentPosts.length === 0 ? (
+            <p className="text-text-secondary text-sm">No recent posts available</p>
+          ) : (
+            recentPosts
+              .filter(post => post.slug !== currentSlug)
+              .slice(0, 3)
+              .map((post) => (
+                <Link 
+                  key={post.id}
+                  to={`/blog/${post.slug}`}
+                  className="block group"
+                >
+                  <div className="pb-4 border-b border-primary/10 last:border-b-0 last:pb-0">
+                    <h4 className="text-text-primary group-hover:text-primary-accent transition-colors mb-2 leading-snug">
+                      {post.title}
+                    </h4>
+                    <time className="text-sm text-text-secondary">
+                      {post.date}
+                    </time>
+                  </div>
+                </Link>
+              ))
+          )}
         </div>
       </div>
 
@@ -44,7 +56,7 @@ const BlogSidebar = ({ currentArticle }: BlogSidebarProps) => {
           Categories
         </h3>
         <div className="flex flex-wrap gap-2">
-          {blogCategories.map((category) => (
+          {ARTICLE_CATEGORIES.map((category) => (
             <span 
               key={category}
               className="px-3 py-1 bg-primary/10 border border-primary/30 text-primary text-sm cursor-pointer hover:bg-primary/20 transition-colors"

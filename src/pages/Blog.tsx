@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, Calendar, Clock, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { blogArticles } from '../data/blogArticles';
+import { useArticles } from '../hooks/useArticles';
 
 const Blog = () => {
   const [animatePosts, setAnimatePosts] = useState(false);
+  const { articles, loading, error } = useArticles();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -38,7 +39,42 @@ const Blog = () => {
           />
           
           <div className="space-y-20">
-            {blogArticles.map((post, index) => (
+            {loading ? (
+              // Loading skeleton
+              Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="animate-pulse">
+                  <div className="flex flex-wrap items-center gap-4 mb-4">
+                    <div className="h-4 bg-primary/20 rounded w-24"></div>
+                    <div className="h-4 bg-text-secondary/20 rounded w-16"></div>
+                    <div className="h-4 bg-text-secondary/20 rounded w-20"></div>
+                    <div className="h-6 bg-primary/20 rounded w-32"></div>
+                  </div>
+                  <div className="h-8 bg-text-secondary/20 rounded mb-6"></div>
+                  <div className="space-y-2 mb-6">
+                    <div className="h-4 bg-text-secondary/20 rounded"></div>
+                    <div className="h-4 bg-text-secondary/20 rounded w-4/5"></div>
+                    <div className="h-4 bg-text-secondary/20 rounded w-3/5"></div>
+                  </div>
+                  <div className="h-4 bg-primary/20 rounded w-32"></div>
+                </div>
+              ))
+            ) : error ? (
+              <div className="text-center py-12">
+                <div className="text-red-400 mb-4 text-2xl">⚠️ Unable to load articles</div>
+                <p className="text-text-secondary mb-4">{error}</p>
+                <p className="text-text-secondary text-sm">
+                  Connect to Supabase to enable dynamic article loading.
+                </p>
+              </div>
+            ) : articles.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-text-secondary mb-4 text-2xl">📝 No articles available</div>
+                <p className="text-text-secondary text-sm">
+                  Connect to Supabase and add some articles to see them here.
+                </p>
+              </div>
+            ) : (
+              articles.map((post, index) => (
               <article 
                 key={post.id}
                 className={`transition-all duration-600 hover:pl-6 hover:border-l-2 hover:border-primary cursor-pointer group ${
@@ -86,7 +122,8 @@ const Blog = () => {
                   </div>
                 </Link>
               </article>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </section>
