@@ -123,13 +123,13 @@ const Contact = () => {
       if (currentInterests.length < 2) {
         setFormData({
           ...formData,
-          interests: [...currentInterests, interest]
+          interests: [...currentInterests, interest],
         });
       }
     } else {
       setFormData({
         ...formData,
-        interests: currentInterests.filter(i => i !== interest)
+        interests: currentInterests.filter((i) => i !== interest),
       });
     }
   };
@@ -216,31 +216,46 @@ const Contact = () => {
                   <div className="space-y-3">
                     {[
                       "Quantum Computing",
-                      "Resilient AI Systems", 
+                      "Resilient AI Systems",
                       "Neural Commerce Platforms",
                       "Enterprise Solutions",
-                      "Research Collaboration"
+                      "Research Collaboration",
                     ].map((interest) => (
-                      <label key={interest} className="flex items-center space-x-3 cursor-pointer">
+                      <label
+                        key={interest}
+                        className="flex items-center space-x-3 cursor-pointer"
+                      >
                         <input
                           type="checkbox"
-                          checked={formData.interests?.includes(interest) || false}
-                          onChange={(e) => handleInterestChange(interest, e.target.checked)}
-                          disabled={!formData.interests?.includes(interest) && (formData.interests?.length || 0) >= 2}
+                          checked={
+                            formData.interests?.includes(interest) || false
+                          }
+                          onChange={(e) =>
+                            handleInterestChange(interest, e.target.checked)
+                          }
+                          disabled={
+                            !formData.interests?.includes(interest) &&
+                            (formData.interests?.length || 0) >= 2
+                          }
                           className="w-4 h-4 text-primary bg-transparent border border-text-secondary/30 rounded focus:ring-primary focus:ring-2"
                         />
-                        <span className={`text-sm transition-colors ${
-                          !formData.interests?.includes(interest) && (formData.interests?.length || 0) >= 2
-                            ? 'text-text-secondary/50'
-                            : 'text-text-primary hover:text-primary'
-                        }`}>
+                        <span
+                          className={`text-sm transition-colors ${
+                            !formData.interests?.includes(interest) &&
+                            (formData.interests?.length || 0) >= 2
+                              ? "text-text-secondary/50"
+                              : "text-text-primary hover:text-primary"
+                          }`}
+                        >
                           {interest}
                         </span>
                       </label>
                     ))}
                   </div>
                   {(formData.interests?.length || 0) >= 2 && (
-                    <p className="text-xs text-primary mt-2">Maximum 2 interests selected</p>
+                    <p className="text-xs text-primary mt-2">
+                      Maximum 2 interests selected
+                    </p>
                   )}
                 </div>
 
@@ -319,7 +334,7 @@ const Contact = () => {
                     <img
                       src="/instagram.svg"
                       alt="Instagram"
-                      className="w-9 h-9"
+                      className="w-5 h-5"
                     />
                   </a>
                 </div>
@@ -338,7 +353,7 @@ const Contact = () => {
         userData={{
           name: userData.name,
           email: userData.email,
-          interest: selectedInterest
+          interest: selectedInterest,
         }}
       />
 
