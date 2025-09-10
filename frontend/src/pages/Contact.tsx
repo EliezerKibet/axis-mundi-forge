@@ -37,7 +37,7 @@ const Contact = () => {
     setIsSubmitting(true);
 
     const formDataObj = {
-      name: formData.identifier,
+      name: formData.identifier, //name,message
       email: formData.email,
       subject: formData.subject,
       message: formData.message,
@@ -46,7 +46,7 @@ const Contact = () => {
 
     try {
       const response = await fetch(
-        "https://mholm12.app.n8n.cloud/webhook/form",
+        "https://n8n-service-bmex.onrender.com/webhook/Form",
         {
           method: "POST",
           headers: {
