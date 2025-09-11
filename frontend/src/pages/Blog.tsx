@@ -93,7 +93,13 @@ const Blog = () => {
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-primary" />
                         <time className="text-primary tracking-widest">
-                          {post.date.toUpperCase()}
+                          {new Date(post.date)
+                            .toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })
+                            .toUpperCase()}
                         </time>
                       </div>
                       <div className="flex items-center gap-2">

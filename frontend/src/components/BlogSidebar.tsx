@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom';
-import { useFeaturedArticles } from '../hooks/useArticles';
-import { ARTICLE_CATEGORIES } from '../types/article';
+import { Link } from "react-router-dom";
+import { useFeaturedArticles } from "../hooks/useArticles";
+import { ARTICLE_CATEGORIES } from "../types/article";
 
 interface BlogSidebarProps {
   currentSlug?: string;
@@ -25,13 +25,15 @@ const BlogSidebar = ({ currentSlug }: BlogSidebarProps) => {
               </div>
             ))
           ) : recentPosts.length === 0 ? (
-            <p className="text-text-secondary text-sm">No recent posts available</p>
+            <p className="text-text-secondary text-sm">
+              No recent posts available
+            </p>
           ) : (
             recentPosts
-              .filter(post => post.slug !== currentSlug)
+              .filter((post) => post.slug !== currentSlug)
               .slice(0, 3)
               .map((post) => (
-                <Link 
+                <Link
                   key={post.id}
                   to={`/blog/${post.slug}`}
                   className="block group"
@@ -41,7 +43,11 @@ const BlogSidebar = ({ currentSlug }: BlogSidebarProps) => {
                       {post.title}
                     </h4>
                     <time className="text-sm text-text-secondary">
-                      {post.date}
+                      {new Date(post.publishDate).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
                     </time>
                   </div>
                 </Link>
@@ -57,7 +63,7 @@ const BlogSidebar = ({ currentSlug }: BlogSidebarProps) => {
         </h3>
         <div className="flex flex-wrap gap-2">
           {ARTICLE_CATEGORIES.map((category) => (
-            <span 
+            <span
               key={category}
               className="px-3 py-1 bg-primary/10 border border-primary/30 text-primary text-sm cursor-pointer hover:bg-primary/20 transition-colors"
             >

@@ -300,6 +300,55 @@ app.get("/api/articles", async (req, res) => {
   }
 });
 
+//individual article
+app.get("/api/articles/:slug", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const client = await pool.connect();
+
+    const query = `
+      SELECT 
+        id,
+        title,
+        summary as excerpt,
+        content,
+        category,
+        author,
+        published_date as "publishDate",
+        published_date as date,
+        summary as preview,
+        '5 min' as "readTime",
+        '5' as "readingTime",
+        COALESCE((metadata->>'tags')::jsonb, '[]'::jsonb) as tags,
+        LOWER(REPLACE(title, ' ', '-')) as slug,
+        metadata->>'featuredImage' as "featuredImage",
+        CASE 
+          WHEN is_active = true THEN 'published'
+          ELSE 'draft'
+        END as status,
+        metadata
+      FROM articles 
+      WHERE LOWER(REPLACE(title, ' ', '-')) = $1 
+        AND is_active = true
+    `;
+
+    const result = await client.query(query, [slug]);
+    client.release();
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error fetching article:", error);
+    res.status(500).json({
+      error: "Failed to fetch article",
+      details: error.message,
+    });
+  }
+});
+
 //test schema
 app.get("/test/schema", async (req, res) => {
   try {

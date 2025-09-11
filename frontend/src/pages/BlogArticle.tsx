@@ -6,7 +6,7 @@ import QuantumCircuit from "../components/QuantumCircuit";
 
 const BlogArticle = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { article, loading, error } = useArticle(slug || '');
+  const { article, loading, error } = useArticle(slug || "");
 
   if (loading) {
     return (
@@ -35,7 +35,8 @@ const BlogArticle = () => {
             Article Not Found
           </h1>
           <p className="text-text-secondary mb-8">
-            {error || "The article you're looking for doesn't exist or hasn't been loaded yet."}
+            {error ||
+              "The article you're looking for doesn't exist or hasn't been loaded yet."}
           </p>
           <p className="text-text-secondary text-sm mb-8">
             Connect to Supabase to enable dynamic article loading.
@@ -137,7 +138,11 @@ const BlogArticle = () => {
           <div className="flex flex-wrap items-center gap-6 mb-6 text-sm text-text-secondary">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-primary" />
-              {article.date}
+              {new Date(article.publishDate).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-primary" />
@@ -164,7 +169,6 @@ const BlogArticle = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Article Content */}
           <div className="lg:col-span-2">
-
             {/* Quantum Circuit Visualization (for quantum article) */}
             {article.slug === "quantum-computing-enterprise" && (
               <div className="mb-12">
