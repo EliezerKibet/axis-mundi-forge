@@ -32,11 +32,5 @@ export interface ArticleFilters {
   limit?: number;
 }
 
-export const ARTICLE_CATEGORIES = [
-  "Quantum Computing",
-  "Artificial Intelligence", 
-  "Web3 & Decentralization",
-  "Emerging Technology"
-] as const;
 
-export type ArticleCategory = typeof ARTICLE_CATEGORIES[number];
+export type ArticleCategory = string;
