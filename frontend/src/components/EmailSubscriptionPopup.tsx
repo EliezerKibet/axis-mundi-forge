@@ -27,6 +27,7 @@ const EmailSubscriptionPopup = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: "Basic YWRtaW46YWRtaW4=",
           },
           body: JSON.stringify({
             name: userData.name,
@@ -38,6 +39,7 @@ const EmailSubscriptionPopup = ({
       );
 
       if (webhookResponse.ok) {
+        //have look at response
         console.log("Subscription webhook sent successfully");
       }
     } catch (error) {

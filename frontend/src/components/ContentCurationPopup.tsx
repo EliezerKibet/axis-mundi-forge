@@ -1,8 +1,9 @@
 import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Article } from "../types/article";
 import { useArticles, useFeaturedArticles } from "../hooks/useArticles";
+import { log } from "console";
 
 interface ContentCurationPopupProps {
   isOpen: boolean;
@@ -53,24 +54,125 @@ const generateArticleTags = (articles: Article[]): string[] => {
   return Array.from(tags).slice(0, 3);
 };
 
-const getArticlesByInterest = (
+// Fetch article IDs from n8n and then get full article data
+const getArticlesByInterest = async (
+  selectedInterest: string
+): Promise<Article[]> => {
+  try {
+    // Normalize the interest for consistent API calls
+    const normalizeInterest = (interest: string): string => {
+      if (
+        interest === "Science and Technology" ||
+        interest === "Science & Technology"
+      ) {
+        return "Science & Technology";
+      }
+      return interest;
+    };
+
+    const normalizedInterest = normalizeInterest(selectedInterest);
+
+    // Step 1: Get article IDs from n8n webhook
+    const idsResponse = await fetch(
+      `https://n8n-service-bmex.onrender.com/webhook/articles-by-interest?interest=${encodeURIComponent(
+        normalizedInterest
+      )}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!idsResponse.ok) {
+      throw new Error(`HTTP error! status: ${idsResponse.status}`);
+    }
+
+    const responseData = await idsResponse.json();
+
+    // Extract article IDs from the response object
+    const articleIds = responseData.response || [];
+
+    // Check if the status is ok and we have IDs
+    if (
+      responseData.status !== "ok" ||
+      !Array.isArray(articleIds) ||
+      articleIds.length === 0
+    ) {
+      console.log("No articles found or invalid response:", responseData);
+      return [];
+    }
+
+    // Step 2: Fetch full article data for each ID
+    const articlePromises = articleIds.slice(0, 6).map(async (id: string) => {
+      try {
+        const articleResponse = await fetch(
+          `https://n8n-service-bmex.onrender.com/webhook/article/${id}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!articleResponse.ok) {
+          console.warn(
+            `Failed to fetch article ${id}: ${articleResponse.status}`
+          );
+          return null;
+        }
+
+        return await articleResponse.json();
+      } catch (error) {
+        console.warn(`Error fetching article ${id}:`, error);
+        return null;
+      }
+    });
+
+    // Wait for all article requests and filter out failed ones
+    const articles = await Promise.all(articlePromises);
+    const validArticles = articles.filter(
+      (article): article is Article => article !== null
+    );
+
+    console.log(
+      `Fetched ${validArticles.length} articles for interest: ${selectedInterest}`
+    );
+
+    return validArticles;
+  } catch (error) {
+    console.error("Error fetching articles by interest from n8n:", error);
+
+    // Return empty array - fallback will be handled in component
+    return [];
+  }
+};
+
+// Updated local filtering function as fallback
+const getArticlesByInterestLocal = (
   selectedInterest: string,
   availableArticles: Article[]
 ): Article[] => {
   if (availableArticles.length === 0) return [];
 
-  // Dynamic filtering based on actual categories from your database
+  // Normalize function to treat both science category variations as the same
+  const normalizeCategory = (category: string): string => {
+    if (
+      category === "Science and Technology" ||
+      category === "Science & Technology"
+    ) {
+      return "Science & Technology";
+    }
+    return category;
+  };
+
+  // Updated mapping with normalized categories
   const interestToCategory: { [key: string]: string[] } = {
-    Technology: [
-      "Technology",
-      "Science & Technology",
-      "Science and Technology",
-    ],
-    "Science & Technology": [
-      "Science & Technology",
-      "Technology",
-      "Science and Technology",
-    ],
+    Technology: ["Technology", "Science & Technology"],
+    "Science & Technology": ["Science & Technology", "Technology"],
+    "Science and Technology": ["Science & Technology", "Technology"],
     "Artificial Intelligence": [
       "Artificial Intelligence",
       "Technology",
@@ -83,37 +185,47 @@ const getArticlesByInterest = (
     ],
   };
 
-  // If the selected interest matches a category directly, use it
-  let relevantCategories = interestToCategory[selectedInterest];
+  const normalizedInterest = normalizeCategory(selectedInterest);
+  let relevantCategories =
+    interestToCategory[selectedInterest] ||
+    interestToCategory[normalizedInterest];
 
-  // If no direct match, try to find partial matches
   if (!relevantCategories) {
     relevantCategories = [];
     Object.keys(interestToCategory).forEach((category) => {
+      const normalizedCategory = normalizeCategory(category);
       if (
-        category.toLowerCase().includes(selectedInterest.toLowerCase()) ||
-        selectedInterest.toLowerCase().includes(category.toLowerCase())
+        normalizedCategory
+          .toLowerCase()
+          .includes(normalizedInterest.toLowerCase()) ||
+        normalizedInterest
+          .toLowerCase()
+          .includes(normalizedCategory.toLowerCase())
       ) {
         relevantCategories.push(...interestToCategory[category]);
       }
     });
   }
 
-  // Fallback to showing all articles if no matches
   if (relevantCategories.length === 0) {
     return availableArticles.slice(0, 6);
   }
 
-  // Filter articles by matching categories
-  const filteredArticles = availableArticles.filter((article) =>
-    relevantCategories.some(
-      (cat) =>
-        article.category.toLowerCase().includes(cat.toLowerCase()) ||
-        cat.toLowerCase().includes(article.category.toLowerCase())
-    )
-  );
+  const filteredArticles = availableArticles.filter((article) => {
+    const normalizedArticleCategory = normalizeCategory(article.category);
+    return relevantCategories.some((cat) => {
+      const normalizedCat = normalizeCategory(cat);
+      return (
+        normalizedArticleCategory
+          .toLowerCase()
+          .includes(normalizedCat.toLowerCase()) ||
+        normalizedCat
+          .toLowerCase()
+          .includes(normalizedArticleCategory.toLowerCase())
+      );
+    });
+  });
 
-  // Return all matching articles (up to 6 for display)
   return filteredArticles.length > 0
     ? filteredArticles.slice(0, 6)
     : availableArticles.slice(0, 6);
@@ -131,11 +243,6 @@ const formatDateOnly = (dateString: string): string => {
     return dateString; // Return original if parsing fails
   }
 };
-
-interface QuestionResponse {
-  answer: string;
-  recommendedArticles: RecommendedArticle[];
-}
 
 const generateContextualResponse = (
   question: string,
@@ -174,7 +281,7 @@ const generateContextualResponse = (
           ? article.preview.substring(0, 80) + "..."
           : article.preview || article.excerpt || "No description available",
       readTime: article.readingTime || article.readTime,
-      date: article.date,
+      date: formatDateOnly(article.date), // Apply date formatting
       slug: article.slug,
     })),
   };
@@ -186,17 +293,65 @@ const ContentCurationPopup = ({
   selectedInterest,
 }: ContentCurationPopupProps) => {
   const navigate = useNavigate();
-  const { articles: availableArticles, loading } = useArticles({ limit: 50 });
-  const relevantArticles = getArticlesByInterest(
-    selectedInterest,
-    availableArticles
-  );
+  const { articles: availableArticles, loading: localLoading } = useArticles({
+    limit: 50,
+  });
+
+  // State for n8n fetched articles
+  const [relevantArticles, setRelevantArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const dynamicTags = generateArticleTags(relevantArticles);
 
   const [userQuestion, setUserQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [questionResponse, setQuestionResponse] =
     useState<QuestionResponse | null>(null);
+
+  // Fetch articles when component opens or interest changes
+  useEffect(() => {
+    if (isOpen && selectedInterest) {
+      fetchArticlesByInterest();
+    }
+  }, [isOpen, selectedInterest]);
+
+  const fetchArticlesByInterest = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Try to fetch from n8n first
+      const articles = await getArticlesByInterest(selectedInterest);
+
+      if (articles.length > 0) {
+        setRelevantArticles(articles);
+      } else {
+        // Fallback to local filtering if n8n returns no results
+        const localArticles = getArticlesByInterestLocal(
+          selectedInterest,
+          availableArticles
+        );
+        setRelevantArticles(localArticles);
+
+        if (localArticles.length === 0) {
+          setError("No articles found for this interest.");
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching articles:", error);
+      setError("Failed to fetch articles from server. Using local data.");
+
+      // Fallback to local filtering on error
+      const localArticles = getArticlesByInterestLocal(
+        selectedInterest,
+        availableArticles
+      );
+      setRelevantArticles(localArticles);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -206,38 +361,33 @@ const ContentCurationPopup = ({
   };
 
   const handleAskQuestion = async () => {
+    console.log(userQuestion);
     if (!userQuestion.trim()) return;
 
     setIsLoading(true);
 
     try {
-      // Simulate AI processing
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Generate contextual response based on user's interest and available articles
-      const response = generateContextualResponse(
-        userQuestion,
-        selectedInterest,
-        relevantArticles
+      // Send chat input to n8n webhook
+      const webhookResponse = await fetch(
+        "https://n8n-service-bmex.onrender.com/webhook/chat",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Basic YWRtaW46YWRtaW4=",
+          },
+          body: JSON.stringify({
+            chatInput: userQuestion,
+          }),
+        }
       );
 
-      setQuestionResponse(response);
+      const data = await webhookResponse.json();
+      console.log(data);
+
       setUserQuestion(""); // Clear input after successful submission
     } catch (error) {
       console.error("Failed to process question:", error);
-      setQuestionResponse({
-        answer:
-          "I apologize, but I'm unable to process your question at the moment. Please try again later.",
-        recommendedArticles: relevantArticles.slice(0, 2).map((article) => ({
-          title: article.title,
-          category: article.category,
-          description:
-            (article.preview || article.excerpt || "").substring(0, 80) + "...",
-          readTime: article.readingTime || article.readTime,
-          date: article.date,
-          slug: article.slug,
-        })),
-      });
     } finally {
       setIsLoading(false);
     }
@@ -264,6 +414,13 @@ const ContentCurationPopup = ({
             Based on your selected topics:{" "}
             <span className="text-primary">{selectedInterest}</span>
           </p>
+
+          {/* Error message */}
+          {error && (
+            <div className="mb-4 p-3 bg-yellow-600/20 border border-yellow-600/30 text-yellow-400 text-sm">
+              {error}
+            </div>
+          )}
 
           {/* Dynamic Tags */}
           <div className="flex flex-wrap gap-3">
@@ -333,10 +490,10 @@ const ContentCurationPopup = ({
                     "No description available"}
                 </p>
 
-                {/* Article Metadata */}
+                {/* Article Metadata with formatted date */}
                 <div className="flex items-center justify-between mt-auto">
                   <span className="text-xs text-primary">
-                    {article.date} • by {article.author}
+                    {formatDateOnly(article.date)} • by {article.author}
                   </span>
                   <span className="text-primary text-sm font-medium hover:text-primary-accent">
                     READ ARTICLE →
@@ -367,7 +524,7 @@ const ContentCurationPopup = ({
               onChange={(e) => setUserQuestion(e.target.value)}
               placeholder="What would you like to learn about?"
               className="flex-1 bg-[#1a1f3a] border border-primary/30 px-3 py-2 text-text-primary placeholder-text-secondary/60 focus:border-primary focus:outline-none text-sm"
-              onKeyPress={(e) => e.key === "Enter" && handleAskQuestion()}
+              onKeyDown={(e) => e.key === "Enter" && handleAskQuestion()}
             />
             <button
               onClick={handleAskQuestion}
