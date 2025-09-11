@@ -375,7 +375,7 @@ const ContentCurationPopup = ({
           headers: {
             "Content-Type": "application/json",
             "Authorization": "Basic YWRtaW46YWRtaW4=",
-            "cors": "true"
+            "Access-Control-Allow-Origin": "https://axismunditech.com/"
           },
           body: JSON.stringify({
             chatInput: userQuestion,
