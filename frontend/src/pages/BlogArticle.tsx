@@ -38,9 +38,6 @@ const BlogArticle = () => {
             {error ||
               "The article you're looking for doesn't exist or hasn't been loaded yet."}
           </p>
-          <p className="text-text-secondary text-sm mb-8">
-            Connect to Supabase to enable dynamic article loading.
-          </p>
           <Link to="/blog" className="text-primary hover:text-primary-accent">
             ← Back to Blog
           </Link>
@@ -121,7 +118,7 @@ const BlogArticle = () => {
   return (
     <div className="min-h-screen bg-background tech-grid pt-20">
       {/* Back Navigation */}
-      <div className="max-w-6xl mx-auto px-6 py-6">
+      <div className="max-w-6xl mx-auto px-6 py-6 article-enter article-enter-1">
         <Link
           to="/blog"
           className="inline-flex items-center text-primary hover:text-primary-accent transition-colors"
@@ -132,7 +129,7 @@ const BlogArticle = () => {
       </div>
 
       {/* Article Header */}
-      <section className="bg-card border-l-4 border-primary py-12 px-6 mb-12">
+      <section className="bg-card border-l-4 border-primary py-12 px-6 mb-12 article-enter article-enter-2">
         <div className="max-w-6xl mx-auto">
           {/* Meta Information */}
           <div className="flex flex-wrap items-center gap-6 mb-6 text-sm text-text-secondary">
@@ -165,7 +162,7 @@ const BlogArticle = () => {
       </section>
 
       {/* Main Content Area */}
-      <div className="max-w-6xl mx-auto px-6 pb-20">
+      <div className="max-w-6xl mx-auto px-6 pb-20 article-enter article-enter-3">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Article Content */}
           <div className="lg:col-span-2">

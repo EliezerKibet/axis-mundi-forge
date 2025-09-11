@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* Import Inter font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&display=swap");
 
 /* Axis Mundi Technologies Design System */
 @layer base {
@@ -40,7 +40,11 @@
     --accent-foreground: 0 0% 100%;
 
     /* Gradients and effects */
-    --gradient-primary: linear-gradient(135deg, hsl(212 100% 50%), hsl(190 100% 50%));
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(212 100% 50%),
+      hsl(190 100% 50%)
+    );
     --gradient-dark: linear-gradient(180deg, hsl(223 68% 6%), hsl(228 57% 16%));
     --shadow-blue: 0 10px 30px -10px hsl(212 100% 50% / 0.3);
     --shadow-glow: 0 0 40px hsl(190 100% 50% / 0.4);
@@ -51,7 +55,7 @@
 
     /* Tech grid pattern */
     --grid-opacity: 0.03;
-    
+
     /* No radius for sharp, minimal design */
     --radius: 0px;
   }
@@ -64,7 +68,8 @@
 
   body {
     @apply bg-background text-foreground font-inter;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
     letter-spacing: 0.3px;
   }
 
@@ -86,9 +91,15 @@
 
   /* Tech grid background pattern */
   .tech-grid {
-    background-image: 
-      linear-gradient(rgba(0, 128, 255, var(--grid-opacity)) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 128, 255, var(--grid-opacity)) 1px, transparent 1px);
+    background-image: linear-gradient(
+        rgba(0, 128, 255, var(--grid-opacity)) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        rgba(0, 128, 255, var(--grid-opacity)) 1px,
+        transparent 1px
+      );
     background-size: 50px 50px;
   }
 
@@ -161,7 +172,7 @@
   }
 
   .blue-accent-line::before {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     top: 0;
@@ -178,5 +189,32 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+.article-enter {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: articleEnter 0.6s ease-out forwards;
+}
+
+.article-enter-1 {
+  animation-delay: 0.1s;
+}
+.article-enter-2 {
+  animation-delay: 0.3s;
+}
+.article-enter-3 {
+  animation-delay: 0.5s;
+}
+
+@keyframes articleEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
