@@ -22,7 +22,7 @@ const EmailSubscriptionPopup = ({
 
     try {
       const webhookResponse = await fetch(
-        "https://n8n-service-bmex.onrender.com/webhook/subscribe",
+        "https://n8n-service-bmex.onrender.com/webhook-test/subscribe",
         {
           method: "POST",
           headers: {
