@@ -28,6 +28,7 @@ const EmailSubscriptionPopup = ({
           headers: {
             "Content-Type": "application/json",
             "Authorization": "Basic YWRtaW46YWRtaW4=",
+            "cors": "true"
           },
           body: JSON.stringify({
             name: userData.name,
