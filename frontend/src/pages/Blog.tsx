@@ -4,20 +4,31 @@ import { Link } from "react-router-dom";
 import { useArticles } from "../hooks/useArticles";
 
 const Blog = () => {
+  const [animatePage, setAnimatePage] = useState(false);
   const [animatePosts, setAnimatePosts] = useState(false);
   const { articles, loading, error } = useArticles();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const pageTimer = setTimeout(() => {
+      setAnimatePage(true);
+    }, 100);
+    
+    const postsTimer = setTimeout(() => {
       setAnimatePosts(true);
     }, 500);
-    return () => clearTimeout(timer);
+    
+    return () => {
+      clearTimeout(pageTimer);
+      clearTimeout(postsTimer);
+    };
   }, []);
 
   return (
     <div className="min-h-screen bg-background tech-grid pt-20">
       {/* Hero Section */}
-      <section className="py-20 px-6">
+      <section className={`py-20 px-6 transition-all duration-600 ${
+        animatePage ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      }`}>
         <div className="max-w-4xl mx-auto">
           <div className="blue-accent-line pl-8">
             <h1 className="mb-6">Technical Insights</h1>
@@ -29,7 +40,9 @@ const Blog = () => {
       </section>
 
       {/* Blog Posts */}
-      <section className="py-20 px-6">
+      <section className={`py-20 px-6 transition-all duration-600 ${
+        animatePage ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      }`} style={{ transitionDelay: "200ms" }}>
         <div className="max-w-4xl mx-auto">
           {/* Animated blue line */}
           <div
