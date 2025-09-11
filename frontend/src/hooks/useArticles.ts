@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { Article, ArticleListResponse, ArticleFilters } from '../types/article';
-import { articleService } from '../services/articleService';
+import { useState, useEffect } from "react";
+import { Article, ArticleListResponse, ArticleFilters } from "../types/article";
+import { articleService } from "../services/articleService";
 
 export const useArticles = (filters: ArticleFilters = {}) => {
   const [data, setData] = useState<ArticleListResponse>({
     articles: [],
     total: 0,
     page: 1,
-    limit: 10
+    limit: 10,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,8 +19,8 @@ export const useArticles = (filters: ArticleFilters = {}) => {
       const response = await articleService.getArticles(filters);
       setData(response);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch articles');
-      console.error('Error fetching articles:', err);
+      setError(err instanceof Error ? err.message : "Failed to fetch articles");
+      console.error("Error fetching articles:", err);
     } finally {
       setLoading(false);
     }
@@ -37,7 +37,7 @@ export const useArticles = (filters: ArticleFilters = {}) => {
     limit: data.limit,
     loading,
     error,
-    refetch: fetchArticles
+    refetch: fetchArticles,
   };
 };
 
@@ -54,11 +54,13 @@ export const useArticle = (slug: string) => {
         const data = await articleService.getArticleBySlug(slug);
         setArticle(data);
         if (!data) {
-          setError('Article not found');
+          setError("Article not found");
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch article');
-        console.error('Error fetching article:', err);
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch article"
+        );
+        console.error("Error fetching article:", err);
       } finally {
         setLoading(false);
       }
@@ -85,8 +87,12 @@ export const useFeaturedArticles = (limit: number = 3) => {
         const data = await articleService.getFeaturedArticles(limit);
         setArticles(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch featured articles');
-        console.error('Error fetching featured articles:', err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to fetch featured articles"
+        );
+        console.error("Error fetching featured articles:", err);
       } finally {
         setLoading(false);
       }
@@ -96,4 +102,26 @@ export const useFeaturedArticles = (limit: number = 3) => {
   }, [limit]);
 
   return { articles, loading, error };
+};
+
+export const useCategories = () => {
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await articleService.getCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  return { categories, loading };
 };

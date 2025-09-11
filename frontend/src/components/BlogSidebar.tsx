@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useFeaturedArticles } from "../hooks/useArticles";
+import { useCategories, useFeaturedArticles } from "../hooks/useArticles";
 import { ARTICLE_CATEGORIES } from "../types/article";
 
 interface BlogSidebarProps {
@@ -8,7 +8,7 @@ interface BlogSidebarProps {
 
 const BlogSidebar = ({ currentSlug }: BlogSidebarProps) => {
   const { articles: recentPosts, loading } = useFeaturedArticles(5);
-
+  const { categories } = useCategories();
   return (
     <div className="space-y-8">
       {/* Recent Posts */}
@@ -62,14 +62,18 @@ const BlogSidebar = ({ currentSlug }: BlogSidebarProps) => {
           Categories
         </h3>
         <div className="flex flex-wrap gap-2">
-          {ARTICLE_CATEGORIES.map((category) => (
-            <span
-              key={category}
-              className="px-3 py-1 bg-primary/10 border border-primary/30 text-primary text-sm cursor-pointer hover:bg-primary/20 transition-colors"
-            >
-              {category}
-            </span>
-          ))}
+          {loading ? (
+            <div className="text-text-secondary text-sm">Loading...</div>
+          ) : (
+            categories.map((category) => (
+              <span
+                key={category}
+                className="px-3 py-1 bg-primary/10 border border-primary/30 text-primary text-sm cursor-pointer hover:bg-primary/20 transition-colors"
+              >
+                {category}
+              </span>
+            ))
+          )}
         </div>
       </div>
 
