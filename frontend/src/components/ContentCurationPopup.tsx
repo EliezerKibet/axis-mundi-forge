@@ -375,6 +375,7 @@ const ContentCurationPopup = ({
           headers: {
             "Content-Type": "application/json",
             "Authorization": "Basic YWRtaW46YWRtaW4=",
+            "cors": "true"
           },
           body: JSON.stringify({
             chatInput: userQuestion,

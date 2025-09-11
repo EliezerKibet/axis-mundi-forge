@@ -27,7 +27,7 @@ const EmailSubscriptionPopup = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: "Basic YWRtaW46YWRtaW4=",
+            "Authorization": "Basic YWRtaW46YWRtaW4=",
           },
           body: JSON.stringify({
             name: userData.name,
