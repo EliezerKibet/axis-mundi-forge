@@ -3,7 +3,7 @@ import { Article, ArticleListResponse, ArticleFilters } from "../types/article";
 class ArticleService {
   private apiUrl =
     import.meta.env.VITE_API_BASE_URL ||
-    "https://axis-mundi-backend.onrender.com/";
+    "https://axis-mundi-backend.onrender.com/api";
 
   async getArticles(
     filters: ArticleFilters = {}
