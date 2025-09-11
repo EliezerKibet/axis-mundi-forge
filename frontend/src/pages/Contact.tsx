@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import EmailSubscriptionPopup from "@/components/EmailSubscriptionPopup";
 import ContentCurationPopup from "@/components/ContentCurationPopup";
-
+import { useCategories } from "../hooks/useArticles";
 const Contact = () => {
   const [formData, setFormData] = useState({
     identifier: "",
@@ -24,7 +24,8 @@ const Contact = () => {
     email: "",
     interests: [] as string[],
   });
-
+  const [interestError, setInterestError] = useState("");
+  const { categories, loading: categoriesLoading } = useCategories();
   const [result, setResult] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -214,43 +215,44 @@ const Contact = () => {
                     INTERESTS (Select up to 2)
                   </label>
                   <div className="space-y-3">
-                    {[
-                      "Quantum Computing",
-                      "Resilient AI Systems",
-                      "Neural Commerce Platforms",
-                      "Enterprise Solutions",
-                      "Research Collaboration",
-                    ].map((interest) => (
-                      <label
-                        key={interest}
-                        className="flex items-center space-x-3 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={
-                            formData.interests?.includes(interest) || false
-                          }
-                          onChange={(e) =>
-                            handleInterestChange(interest, e.target.checked)
-                          }
-                          disabled={
-                            !formData.interests?.includes(interest) &&
-                            (formData.interests?.length || 0) >= 2
-                          }
-                          className="w-4 h-4 text-primary bg-transparent border border-text-secondary/30 rounded focus:ring-primary focus:ring-2"
-                        />
-                        <span
-                          className={`text-sm transition-colors ${
-                            !formData.interests?.includes(interest) &&
-                            (formData.interests?.length || 0) >= 2
-                              ? "text-text-secondary/50"
-                              : "text-text-primary hover:text-primary"
-                          }`}
+                    {categoriesLoading ? (
+                      <div className="text-text-secondary text-sm">
+                        Loading categories...
+                      </div>
+                    ) : (
+                      categories.map((interest) => (
+                        <label
+                          key={interest}
+                          className="flex items-center space-x-3 cursor-pointer"
                         >
-                          {interest}
-                        </span>
-                      </label>
-                    ))}
+                          <input
+                            type="checkbox"
+                            checked={
+                              formData.interests?.includes(interest) || false
+                            }
+                            onChange={(e) => {
+                              handleInterestChange(interest, e.target.checked);
+                              setInterestError(""); // Clear error when user makes selection
+                            }}
+                            disabled={
+                              !formData.interests?.includes(interest) &&
+                              (formData.interests?.length || 0) >= 2
+                            }
+                            className="w-3 h-3 text-primary bg-transparent border border-text-secondary/30 rounded focus:ring-primary focus:ring-2"
+                          />
+                          <span
+                            className={`text-sm transition-colors ${
+                              !formData.interests?.includes(interest) &&
+                              (formData.interests?.length || 0) >= 2
+                                ? "text-text-secondary/50"
+                                : "text-text-primary hover:text-primary"
+                            }`}
+                          >
+                            {interest}
+                          </span>
+                        </label>
+                      ))
+                    )}
                   </div>
                   {(formData.interests?.length || 0) >= 2 && (
                     <p className="text-xs text-primary mt-2">
