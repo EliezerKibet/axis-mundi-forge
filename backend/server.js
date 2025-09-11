@@ -1,470 +1,188 @@
-//
-
-const express = require("express");
-const cors = require("cors");
-const { Pool } = require("pg");
-require("dotenv").config();
+const express = require('express');
+const fs = require('fs').promises;
+const path = require('path');
+const cors = require('cors');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-app.use(
-  cors({
-    origin: [
-      "http://localhost:8080", //front end url
-      "http://localhost:3000",
-      "https://axismunditech.com",
-      "http://localhost:5173",
-      "http://127.0.0.1:8080",
-    ],
-    credentials: true,
-  })
-);
-
+// Middleware
+app.use(cors());
 app.use(express.json());
+app.use(express.static('public')); // for serving static files
 
-// Simple external database connection
-const pool = new Pool({
-  connectionString: process.env.EXTERNAL_DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+// Articles directory path
+const ARTICLES_DIR = path.join(__dirname, 'articles');
 
-// Test connection on startup
-async function testConnection() {
+// Ensure articles directory exists
+async function ensureArticlesDir() {
   try {
-    const client = await pool.connect();
-    const result = await client.query(
-      "SELECT NOW(), current_database(), version()"
-    );
-
-    console.log("✅ Connected to external database!");
-    console.log("📊 Database:", result.rows[0].current_database);
-    console.log("🕐 Time:", result.rows[0].now);
-    console.log("📋 Version:", result.rows[0].version.split(" ")[0]);
-
-    client.release();
-    return true;
-  } catch (error) {
-    console.error("❌ Connection failed:", error.message);
-    return false;
+    await fs.access(ARTICLES_DIR);
+  } catch {
+    await fs.mkdir(ARTICLES_DIR, { recursive: true });
+    console.log('Articles directory created');
   }
 }
 
-// Health check endpoint
-app.get("/health", async (req, res) => {
+// Get all articles
+app.get('/api/articles', async (req, res) => {
   try {
-    const client = await pool.connect();
-    const result = await client.query(
-      "SELECT NOW() as time, current_database() as db"
-    );
-    client.release();
-
-    res.json({
-      status: "OK",
-      connected: true,
-      database: result.rows[0].db,
-      timestamp: result.rows[0].time,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: "ERROR",
-      connected: false,
-      error: error.message,
-    });
-  }
-});
-
-//article structure
-app.get("/test/articles-structure", async (req, res) => {
-  try {
-    const client = await pool.connect();
-
-    const structureQuery = `
-      SELECT column_name, data_type, is_nullable, column_default
-      FROM information_schema.columns 
-      WHERE table_name = 'articles' 
-        AND table_schema = 'public'
-      ORDER BY ordinal_position
-    `;
-
-    const structure = await client.query(structureQuery);
-
-    // Check indexes
-    const indexQuery = `
-      SELECT indexname, indexdef
-      FROM pg_indexes
-      WHERE tablename = 'articles'
-        AND schemaname = 'public'
-    `;
-
-    const indexes = await client.query(indexQuery);
-
-    client.release();
-
-    res.json({
-      success: true,
-      articles_table: {
-        columns: structure.rows,
-        indexes: indexes.rows,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
-
-//article data
-app.get("/test/articles-data", async (req, res) => {
-  try {
-    const client = await pool.connect();
-
-    // Count total articles
-    const countQuery = `SELECT COUNT(*) as total FROM articles`;
-    const countResult = await client.query(countQuery);
-
-    // Get sample articles
-    const sampleQuery = `
-      SELECT 
-        id, 
-        title, 
-        category, 
-        author, 
-        published_date, 
-        is_active,
-        length(content) as content_length,
-        length(summary) as summary_length
-      FROM articles 
-      ORDER BY published_date DESC 
-      LIMIT 5
-    `;
-
-    const sampleResult = await client.query(sampleQuery);
-
-    // Check metadata structure
-    const metadataQuery = `
-      SELECT 
-        id,
-        title,
-        metadata
-      FROM articles 
-      WHERE metadata IS NOT NULL
-      LIMIT 3
-    `;
-
-    const metadataResult = await client.query(metadataQuery);
-
-    client.release();
-
-    res.json({
-      success: true,
-      data_status: {
-        total_articles: countResult.rows[0].total,
-        sample_articles: sampleResult.rows,
-        metadata_examples: metadataResult.rows,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
-
-//search query
-app.get("/test/fulltext-search", async (req, res) => {
-  try {
-    const { query = "quantum" } = req.query;
-    const client = await pool.connect();
-
-    // Test full-text search using tsv column
-    const searchQuery = `
-      SELECT 
-        id,
-        title,
-        category,
-        ts_rank(tsv, plainto_tsquery('english', $1)) as rank
-      FROM articles
-      WHERE tsv @@ plainto_tsquery('english', $1)
-        AND is_active = true
-      ORDER BY rank DESC
-      LIMIT 5
-    `;
-
-    const searchResult = await client.query(searchQuery, [query]);
-
-    client.release();
-
-    res.json({
-      success: true,
-      search_test: {
-        query: query,
-        results_found: searchResult.rows.length,
-        results: searchResult.rows,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      note: "This might fail if tsv column doesn't exist or full-text search isn't set up",
-    });
-  }
-});
-
-//what front end will show
-app.get("/api/articles", async (req, res) => {
-  try {
-    const { page = 1, limit = 10, category, search } = req.query;
-    const client = await pool.connect();
-
-    let query = `
-      SELECT 
-        id,
-        title,
-        summary as excerpt,
-        content,
-        category,
-        author,
-        published_date as "publishDate",
-        published_date as date,
-        summary as preview,
-        '5 min' as "readTime",
-        '5' as "readingTime",
-        COALESCE((metadata->>'tags')::jsonb, '[]'::jsonb) as tags,
-        LOWER(REPLACE(title, ' ', '-')) as slug,
-        metadata->>'featuredImage' as "featuredImage",
-        CASE 
-          WHEN is_active = true THEN 'published'
-          ELSE 'draft'
-        END as status,
-        metadata
-      FROM articles 
-      WHERE is_active = true
-    `;
-
-    const params = [];
-    let paramCount = 0;
-
-    if (category) {
-      paramCount++;
-      query += ` AND category = $${paramCount}`;
-      params.push(category);
-    }
-
-    if (search) {
-      paramCount++;
-      query += ` AND (title ILIKE $${paramCount} OR content ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-    }
-
-    query += ` ORDER BY published_date DESC`;
-
-    const offset = (page - 1) * limit;
-    paramCount++;
-    query += ` LIMIT $${paramCount}`;
-    params.push(parseInt(limit));
-
-    paramCount++;
-    query += ` OFFSET $${paramCount}`;
-    params.push(offset);
-
-    const result = await client.query(query, params);
-
-    // Get total count
-    let countQuery = `SELECT COUNT(*) as total FROM articles WHERE is_active = true`;
-    const countParams = [];
-
-    if (category) {
-      countQuery += ` AND category = $1`;
-      countParams.push(category);
-    }
-
-    const countResult = await client.query(countQuery, countParams);
-
-    client.release();
-
-    res.json({
-      articles: result.rows,
-      total: parseInt(countResult.rows[0].total),
-      page: parseInt(page),
-      limit: parseInt(limit),
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: "Failed to fetch articles",
-      details: error.message,
-    });
-  }
-});
-
-//individual article
-app.get("/api/articles/:slug", async (req, res) => {
-  try {
-    const { slug } = req.params;
-    const client = await pool.connect();
-
-    const query = `
-      SELECT 
-        id,
-        title,
-        summary as excerpt,
-        content,
-        category,
-        author,
-        published_date as "publishDate",
-        published_date as date,
-        summary as preview,
-        '5 min' as "readTime",
-        '5' as "readingTime",
-        COALESCE((metadata->>'tags')::jsonb, '[]'::jsonb) as tags,
-        LOWER(REPLACE(title, ' ', '-')) as slug,
-        metadata->>'featuredImage' as "featuredImage",
-        CASE 
-          WHEN is_active = true THEN 'published'
-          ELSE 'draft'
-        END as status,
-        metadata
-      FROM articles 
-      WHERE LOWER(REPLACE(title, ' ', '-')) = $1 
-        AND is_active = true
-    `;
-
-    const result = await client.query(query, [slug]);
-    client.release();
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Article not found" });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Error fetching article:", error);
-    res.status(500).json({
-      error: "Failed to fetch article",
-      details: error.message,
-    });
-  }
-});
-
-//test schema
-app.get("/test/schema", async (req, res) => {
-  try {
-    const client = await pool.connect();
-
-    // Check if required tables exist
-    const tablesQuery = `
-      SELECT table_name, table_type
-      FROM information_schema.tables 
-      WHERE table_schema = 'public'
-        AND table_name IN ('articles', 'article_embeddings', 'system_config', 'user_queries')
-      ORDER BY table_name
-    `;
-
-    const tables = await client.query(tablesQuery);
-
-    // Check if required extensions exist
-    const extensionsQuery = `
-      SELECT extname 
-      FROM pg_extension 
-      WHERE extname IN ('vector', 'pgcrypto')
-    `;
-
-    const extensions = await client.query(extensionsQuery);
-
-    // Check if function exists
-    const functionQuery = `
-      SELECT routine_name 
-      FROM information_schema.routines 
-      WHERE routine_name = 'get_articles_for_query'
-        AND routine_schema = 'public'
-    `;
-
-    const functions = await client.query(functionQuery);
-
-    client.release();
-
-    res.json({
-      success: true,
-      schema_status: {
-        tables: tables.rows,
-        tables_found: tables.rows.length,
-        tables_expected: 4,
-        extensions: extensions.rows,
-        extensions_found: extensions.rows.length,
-        extensions_expected: 2,
-        functions: functions.rows,
-        functions_found: functions.rows.length,
-        functions_expected: 1,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
-
-// Simple data test (if you have an articles table)
-app.get("/test-data", async (req, res) => {
-  try {
-    const client = await pool.connect();
-
-    // Try to query a common table name
-    let result;
-    try {
-      result = await client.query(
-        "SELECT COUNT(*) as count FROM articles LIMIT 5"
-      );
-    } catch (error) {
-      // If articles table doesn't exist, try other common names
-      try {
-        result = await client.query(
-          "SELECT COUNT(*) as count FROM posts LIMIT 5"
-        );
-      } catch (error2) {
-        result = { rows: [{ count: "No articles/posts table found" }] };
+    const files = await fs.readdir(ARTICLES_DIR);
+    const articles = [];
+    
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        try {
+          const filePath = path.join(ARTICLES_DIR, file);
+          const content = await fs.readFile(filePath, 'utf8');
+          const article = JSON.parse(content);
+          
+          // Add file info
+          article.filename = file;
+          article.id = path.basename(file, '.json');
+          
+          articles.push(article);
+        } catch (err) {
+          console.error(`Error reading article ${file}:`, err.message);
+        }
       }
     }
-
-    client.release();
-
+    
+    // Sort by date (newest first)
+    articles.sort((a, b) => new Date(b.date || b.created_at || 0) - new Date(a.date || a.created_at || 0));
+    
     res.json({
       success: true,
-      data: result.rows[0],
+      count: articles.length,
+      articles: articles
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
+  } catch (err) {
+    console.error('Error fetching articles:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch articles',
+      message: err.message 
     });
   }
+});
+
+// Get single article by ID
+app.get('/api/articles/:id', async (req, res) => {
+  try {
+    const articleId = req.params.id;
+    const filePath = path.join(ARTICLES_DIR, `${articleId}.json`);
+    
+    const content = await fs.readFile(filePath, 'utf8');
+    const article = JSON.parse(content);
+    
+    article.id = articleId;
+    article.filename = `${articleId}.json`;
+    
+    res.json({
+      success: true,
+      article: article
+    });
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      res.status(404).json({ 
+        success: false, 
+        error: 'Article not found' 
+      });
+    } else {
+      console.error('Error fetching article:', err);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch article',
+        message: err.message 
+      });
+    }
+  }
+});
+
+// Create new article (for n8n to POST to)
+app.post('/api/articles', async (req, res) => {
+  try {
+    const article = req.body;
+    
+    // Generate filename based on title or timestamp
+    const timestamp = Date.now();
+    const slugTitle = article.title 
+      ? article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+      : 'article';
+    
+    const filename = `${timestamp}-${slugTitle}.json`;
+    const filePath = path.join(ARTICLES_DIR, filename);
+    
+    // Add metadata
+    const articleData = {
+      ...article,
+      created_at: new Date().toISOString(),
+      filename: filename,
+      id: path.basename(filename, '.json')
+    };
+    
+    await fs.writeFile(filePath, JSON.stringify(articleData, null, 2), 'utf8');
+    
+    console.log(`New article saved: ${filename}`);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Article created successfully',
+      article: articleData
+    });
+  } catch (err) {
+    console.error('Error creating article:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to create article',
+      message: err.message 
+    });
+  }
+});
+
+// Delete article (optional)
+app.delete('/api/articles/:id', async (req, res) => {
+  try {
+    const articleId = req.params.id;
+    const filePath = path.join(ARTICLES_DIR, `${articleId}.json`);
+    
+    await fs.unlink(filePath);
+    
+    res.json({
+      success: true,
+      message: 'Article deleted successfully'
+    });
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      res.status(404).json({ 
+        success: false, 
+        error: 'Article not found' 
+      });
+    } else {
+      console.error('Error deleting article:', err);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to delete article',
+        message: err.message 
+      });
+    }
+  }
+});
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
 // Start server
-async function startServer() {
-  const PORT = process.env.PORT || 3001;
+app.listen(PORT, async () => {
+  await ensureArticlesDir();
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Articles API available at:`);
+  console.log(`  GET  /api/articles     - Get all articles`);
+  console.log(`  GET  /api/articles/:id - Get single article`);
+  console.log(`  POST /api/articles     - Create new article`);
+  console.log(`  DEL  /api/articles/:id - Delete article`);
+});
 
-  console.log("🔄 Testing database connection...");
-  const connected = await testConnection();
-
-  if (!connected) {
-    console.error("❌ Cannot start server - database connection failed");
-    process.exit(1);
-  }
-
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`🔗 Test endpoints:`);
-    console.log(`   Health: http://localhost:${PORT}/health`);
-    console.log(`   Query:  http://localhost:${PORT}/test-query`);
-    console.log(`   Data:   http://localhost:${PORT}/test-data`);
-  });
-}
-
-startServer();
+module.exports = app;
