@@ -15,14 +15,14 @@ const Contact = () => {
     identifier: "",
     email: "",
     subject: "",
-    interests: [] as string[],
+    interest: "",
     message: "",
   });
 
   const [userData, setUserData] = useState({
     name: "",
     email: "",
-    interests: [] as string[],
+    interest: "",
   });
   const [interestError, setInterestError] = useState("");
   const { categories, loading: categoriesLoading } = useCategories();
@@ -35,6 +35,13 @@ const Contact = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.interest) {
+    setInterestError("Please select an interest");
+    return;
+    }
+    
+    setInterestError("");
     setIsSubmitting(true);
 
     const formDataObj = {
@@ -42,12 +49,12 @@ const Contact = () => {
       email: formData.email,
       subject: formData.subject,
       message: formData.message,
-      interests: formData.interests,
+      interest: formData.interest,
     };
 
     try {
       const response = await fetch(
-        "https://n8n-service-bmex.onrender.com/webhook/Form",
+        "https://n8n-service-bmex.onrender.com/webhook-test/Form",
         {
           method: "POST",
           headers: {
@@ -71,14 +78,14 @@ const Contact = () => {
         const currentUserData = {
           name: formData.identifier,
           email: formData.email,
-          interests: formData.interests,
+          interest: formData.interest,
         };
 
         setUserData(currentUserData);
-        setSelectedInterest(formData.interests[0] || "");
 
-        if (formData.interests.length > 0) {
-          //data  for name , email and interests (done in sendWebhookResponse  )
+        setSelectedInterest(formData.interest || "");
+
+        if (formData.interest) { // Change from .length > 0
           await sendWebhookResponse(currentUserData);
         }
 
@@ -87,7 +94,7 @@ const Contact = () => {
           email: "",
           subject: "",
           message: "",
-          interests: [],
+          interest: "",
         });
 
         // Hide success message after 3 seconds
@@ -118,22 +125,14 @@ const Contact = () => {
     });
   };
 
-  const handleInterestChange = (interest: string, checked: boolean) => {
-    const currentInterests = formData.interests || [];
-    if (checked) {
-      if (currentInterests.length < 2) {
-        setFormData({
-          ...formData,
-          interests: [...currentInterests, interest],
-        });
-      }
-    } else {
-      setFormData({
-        ...formData,
-        interests: currentInterests.filter((i) => i !== interest),
-      });
-    }
-  };
+const handleInterestChange = (interest: string) => {
+  setFormData({
+    ...formData,
+    interest: interest
+  });
+  setInterestError(""); // Clear error when user makes selection
+};
+  
 
   const handleEmailPopupClose = () => {
     setShowEmailPopup(false);
@@ -212,7 +211,7 @@ const Contact = () => {
 
                 <div>
                   <label className="block text-sm text-text-secondary tracking-wider mb-3">
-                    INTERESTS (Select up to 2)
+                    INTERESTS (Select one)
                   </label>
                   <div className="space-y-3">
                     {categoriesLoading ? (
@@ -226,37 +225,22 @@ const Contact = () => {
                           className="flex items-center space-x-3 cursor-pointer"
                         >
                           <input
-                            type="checkbox"
-                            checked={
-                              formData.interests?.includes(interest) || false
-                            }
-                            onChange={(e) => {
-                              handleInterestChange(interest, e.target.checked);
-                              setInterestError(""); // Clear error when user makes selection
-                            }}
-                            disabled={
-                              !formData.interests?.includes(interest) &&
-                              (formData.interests?.length || 0) >= 2
-                            }
-                            className="w-3 h-3 text-primary bg-transparent border border-text-secondary/30 rounded focus:ring-primary focus:ring-2"
+                            type="radio"
+                            name="interest"
+                            checked={formData.interest === interest}
+                            onChange={() => handleInterestChange(interest)}
+                            className="w-3 h-3 text-primary bg-transparent border border-text-secondary/30 rounded-full focus:ring-primary focus:ring-2"
                           />
-                          <span
-                            className={`text-sm transition-colors ${
-                              !formData.interests?.includes(interest) &&
-                              (formData.interests?.length || 0) >= 2
-                                ? "text-text-secondary/50"
-                                : "text-text-primary hover:text-primary"
-                            }`}
-                          >
+                          <span className="text-sm transition-colors text-text-primary hover:text-primary">
                             {interest}
                           </span>
                         </label>
                       ))
                     )}
                   </div>
-                  {(formData.interests?.length || 0) >= 2 && (
-                    <p className="text-xs text-primary mt-2">
-                      Maximum 2 interests selected
+                  {interestError && (
+                    <p className="text-xs text-red-400 mt-2">
+                      {interestError}
                     </p>
                   )}
                 </div>

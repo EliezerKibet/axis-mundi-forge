@@ -34,7 +34,7 @@ const EmailSubscriptionPopup = ({
             name: userData.name,
             email: userData.email,
             interest: userData.interest,
-            subscribed: subscribed, // true for YES, false for NO
+            subscribed: subscribed, 
           }),
         }
       );
