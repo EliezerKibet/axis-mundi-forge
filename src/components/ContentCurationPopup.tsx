@@ -55,52 +55,83 @@ const generateArticleTags = (articles: Article[]): string[] => {
 };
 
 // Fetch article IDs from n8n and then get full article data
-const getArticlesByInterest = async (
-  selectedInterest: string
-): Promise<Article[]> => {
+const getArticlesByInterest = async (selectedInterest: string): Promise<Article[]> => {
   try {
-    // Step 1: Get article IDs from n8n webhook
-    const idsResponse = await fetch(
-      `https://n8n-service-bmex.onrender.com/webhook-test/subscribe`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-
-    if (!idsResponse.ok) {
-      throw new Error(`HTTP error! status: ${idsResponse.status}`);
+    console.log(`Fetching articles for interest: ${selectedInterest}`);
+    
+    // Fetch all articles from your backend
+    const response = await fetch(`${API_BASE_URL}/api/articles`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-
-    const rawResponse = await idsResponse.json(); // Add this missing line
-    const responseData = Array.isArray(rawResponse) ? rawResponse[0] : rawResponse;
-    const articleIds = responseData?.data?.response || [];
-
-    if (
-      responseData?.status !== "ok" ||
-      !Array.isArray(articleIds) ||
-      articleIds.length === 0
-    ) {
-      console.log("No articles found or invalid response:", responseData);
+    
+    const data = await response.json();
+    
+    if (!data.success || !Array.isArray(data.articles)) {
+      console.log("No articles found or invalid response:", data);
       return [];
     }
-
-    // Step 2: Use new backend endpoint instead of individual fetches
-    const articlesResponse = await fetch(
-      `${API_BASE_URL}/api/articles/by-ids?ids=${articleIds.slice(0, 6).join(',')}`
-    );
-
-    if (articlesResponse.ok) {
-      const data = await articlesResponse.json();
-      return data.success ? data.articles : [];
+    
+    console.log(`Found ${data.articles.length} total articles`);
+    
+    // Filter articles by category/interest (case-insensitive)
+    const filteredArticles = data.articles.filter((article: Article) => {
+      const articleCategory = article.category?.toLowerCase() || '';
+      const interestLower = selectedInterest.toLowerCase();
+      
+      // Check if category matches or contains the interest
+      return articleCategory.includes(interestLower) || 
+             interestLower.includes(articleCategory) ||
+             article.title?.toLowerCase().includes(interestLower) ||
+             article.preview?.toLowerCase().includes(interestLower);
+    });
+    
+    console.log(`Filtered to ${filteredArticles.length} articles for "${selectedInterest}"`);
+    
+    // If no exact matches, return recent articles from all categories
+    if (filteredArticles.length === 0) {
+      console.log("No category matches found, returning recent articles");
+      return data.articles.slice(0, 6); // Return 6 most recent
     }
-
-    return [];
+    
+    // Return up to 6 filtered articles
+    return filteredArticles.slice(0, 6);
+    
   } catch (error) {
-    console.error("Error fetching articles by interest from n8n:", error);
+    console.error("Error fetching articles by interest:", error);
     return [];
   }
 };
+
+const fetchArticlesWithLoading = async (
+  selectedInterest: string,
+  setLoading: (loading: boolean) => void,
+  setError: (error: string | null) => void,
+  setArticles: (articles: Article[]) => void
+) => {
+  setLoading(true);
+  setError(null);
+
+  try {
+    const articles = await getArticlesByInterest(selectedInterest);
+    
+    if (articles.length > 0) {
+      setArticles(articles);
+      console.log(`Successfully loaded ${articles.length} articles for ${selectedInterest}`);
+    } else {
+      setError(`No articles found for "${selectedInterest}". Try a different interest.`);
+      setArticles([]);
+    }
+  } catch (error) {
+    console.error("Error in fetchArticlesWithLoading:", error);
+    setError("Failed to fetch articles from server. Please try again.");
+    setArticles([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 
 const formatDateOnly = (dateString: string): string => {
@@ -184,9 +215,46 @@ const ContentCurationPopup = ({
   // Fetch articles when component opens or interest changes
   useEffect(() => {
     if (isOpen && selectedInterest) {
-      fetchArticlesByInterest();
+      fetchArticlesWithLoading(
+        selectedInterest,
+        setLoading,
+        setError,
+        setRelevantArticles
+      );
     }
   }, [isOpen, selectedInterest]);
+
+
+    const debugArticles = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/articles`);
+      const data = await response.json();
+      
+      console.log("=== DEBUG: All Articles ===");
+      console.log(`Total articles: ${data.articles?.length || 0}`);
+      
+      if (data.articles) {
+        // Group articles by category
+        const categoryMap = data.articles.reduce((acc: any, article: Article) => {
+          const category = article.category || 'Uncategorized';
+          if (!acc[category]) acc[category] = [];
+          acc[category].push(article.title);
+          return acc;
+        }, {});
+        
+        console.log("Articles by category:");
+        Object.entries(categoryMap).forEach(([category, titles]: [string, any]) => {
+          console.log(`${category}: ${titles.length} articles`);
+          titles.slice(0, 3).forEach((title: string) => console.log(`  - ${title}`));
+        });
+      }
+      
+      return data.articles || [];
+    } catch (error) {
+      console.error("Debug failed:", error);
+      return [];
+    }
+  };
 
   const fetchArticlesByInterest = async () => {
   setLoading(true);
