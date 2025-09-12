@@ -294,7 +294,7 @@ app.post('/api/subscribe', async (req, res) => {
 
     // Forward to n8n subscription webhook
     const n8nResponse = await fetch(
-      "https://n8n-service-bmex.onrender.com/webhook-test/subscribe",
+      "https://n8n-service-bmex.onrender.com/webhook/subscribe",
       {
         method: "POST",
         headers: {

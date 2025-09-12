@@ -217,9 +217,7 @@ const Blog = () => {
                 <div className="text-text-secondary mb-4 text-2xl">
                   📝 No articles available
                 </div>
-                <p className="text-text-secondary text-sm">
-                  Connect to Supabase and add some articles to see them here.
-                </p>
+                
               </div>
             ) : (
               articles.map((post, index) => (
