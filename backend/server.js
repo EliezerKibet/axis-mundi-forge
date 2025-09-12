@@ -99,42 +99,66 @@ app.get('/api/articles/:id', async (req, res) => {
   }
 });
 
-// Create new article (for n8n to POST to)
+// all articles
 app.post('/api/articles', async (req, res) => {
   try {
-    const article = req.body;
+    const requestData = req.body;
+    let articles = [];
     
-    // Generate filename based on title or timestamp
-    const timestamp = Date.now();
-    const slugTitle = article.title 
-      ? article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-      : 'article';
+    // Handle both single article and array of articles
+    if (Array.isArray(requestData)) {
+      // Direct array of articles
+      articles = requestData;
+    } else if (requestData.articles && Array.isArray(requestData.articles)) {
+      // Object with articles property
+      articles = requestData.articles;
+    } else if (requestData.title) {
+      // Single article object
+      articles = [requestData];
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid request format'
+      });
+    }
     
-    const filename = `${timestamp}-${slugTitle}.json`;
-    const filePath = path.join(ARTICLES_DIR, filename);
+    const savedArticles = [];
     
-    // Add metadata
-    const articleData = {
-      ...article,
-      created_at: new Date().toISOString(),
-      filename: filename,
-      id: path.basename(filename, '.json')
-    };
-    
-    await fs.writeFile(filePath, JSON.stringify(articleData, null, 2), 'utf8');
-    
-    console.log(`New article saved: ${filename}`);
+    for (const article of articles) {
+      // Generate unique filename for each article
+      const timestamp = Date.now() + Math.random(); // Add randomness to avoid duplicates
+      const slugTitle = article.title 
+        ? article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+        : 'article';
+      
+      const filename = `${Math.floor(timestamp * 1000)}-${slugTitle}.json`;
+      const filePath = path.join(ARTICLES_DIR, filename);
+      
+      // Add metadata
+      const articleData = {
+        ...article,
+        created_at: new Date().toISOString(),
+        filename: filename,
+        id: path.basename(filename, '.json')
+      };
+      
+      await fs.writeFile(filePath, JSON.stringify(articleData, null, 2), 'utf8');
+      savedArticles.push(articleData);
+      
+      console.log(`Article saved: ${filename}`);
+    }
     
     res.status(201).json({
       success: true,
-      message: 'Article created successfully',
-      article: articleData
+      message: `${savedArticles.length} article(s) created successfully`,
+      articles: savedArticles,
+      count: savedArticles.length
     });
   } catch (err) {
-    console.error('Error creating article:', err);
+    console.error('Error creating articles:', err);
     res.status(500).json({ 
       success: false, 
-      error: 'Failed to create article',
+      error: 'Failed to create articles',
       message: err.message 
     });
   }
