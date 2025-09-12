@@ -37,15 +37,15 @@ const Contact = () => {
     e.preventDefault();
 
     if (!formData.interest) {
-    setInterestError("Please select an interest");
-    return;
+      setInterestError("Please select an interest");
+      return;
     }
     
     setInterestError("");
     setIsSubmitting(true);
 
     const formDataObj = {
-      name: formData.identifier, //name,message
+      name: formData.identifier,
       email: formData.email,
       subject: formData.subject,
       message: formData.message,
@@ -54,7 +54,7 @@ const Contact = () => {
 
     try {
       const response = await fetch(
-        "https://n8n-service-bmex.onrender.com/webhook-test/Form",
+        "https://axis-mundi-backend.onrender.com/api/contact", 
         {
           method: "POST",
           headers: {
@@ -64,28 +64,18 @@ const Contact = () => {
         }
       );
 
-      if (response.ok) {
+      const result = await response.json();
 
+      if (response.ok && result.success) {
         setResult("");
+        
+        console.log("✅ Contact form submitted successfully:", result);
 
-        console.log("✅ Contact form submitted successfully:", {
-          timestamp: new Date().toISOString(),
-          formData: formDataObj,
-          response: response,
-        });
-
-        const currentUserData = {
-          name: formData.identifier,
-          email: formData.email,
-          interest: formData.interest,
-        };
-
-        setUserData(currentUserData);
-
+        setUserData(result.userData);
         setSelectedInterest(formData.interest || "");
 
-        if (formData.interest) { // Change from .length > 0
-          await sendWebhookResponse(currentUserData);
+        if (formData.interest) {
+          await sendWebhookResponse(result.userData);
         }
 
         setFormData({
@@ -96,10 +86,10 @@ const Contact = () => {
           interest: "",
         });
 
-        // Hide success message after 3 seconds
+        setSuccessMessage("Message transmitted successfully!");
         setTimeout(() => setSuccessMessage(""), 3000);
       } else {
-        setResult("Transmission failed - please try again");
+        setResult(result.error || "Transmission failed - please try again");
         setSuccessMessage("");
       }
     } catch (error) {
@@ -110,7 +100,7 @@ const Contact = () => {
       setIsSubmitting(false);
     }
   };
-
+  
   const sendWebhookResponse = async (userData: any) => {
     setShowEmailPopup(true);
   };

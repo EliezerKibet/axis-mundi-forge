@@ -187,6 +187,73 @@ app.post('/api/articles', async (req, res) => {
   }
 });
 
+//Webhook2
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, subject, message, interest } = req.body;
+    
+    // Basic validation
+    if (!name || !email || !subject || !message || !interest) {
+      return res.status(400).json({
+        success: false,
+        error: 'All fields are required'
+      });
+    }
+
+    // Prepare data for n8n webhook
+    const formDataObj = {
+      name: name,
+      email: email,
+      subject: subject,
+      message: message,
+      interest: interest,
+      timestamp: new Date().toISOString()
+    };
+
+    // Forward to n8n webhook
+    const n8nResponse = await fetch(
+      "https://n8n-service-bmex.onrender.com/webhook-test/Form",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formDataObj),
+      }
+    );
+
+    if (n8nResponse.ok) {
+      console.log("✅ Contact form submitted successfully:", {
+        timestamp: new Date().toISOString(),
+        formData: formDataObj,
+        n8nStatus: n8nResponse.status
+      });
+
+      res.json({
+        success: true,
+        message: 'Contact form submitted successfully',
+        userData: {
+          name: name,
+          email: email,
+          interest: interest
+        }
+      });
+    } else {
+      console.error("❌ n8n webhook failed:", n8nResponse.status);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to process contact form'
+      });
+    }
+
+  } catch (error) {
+    console.error("❌ Contact form submission failed:", error);
+    res.status(500).json({
+      success: false,
+      error: 'Network error occurred'
+    });
+  }
+});
 
 //delete all articles
 app.delete('/api/articles/all', async (req, res) => {
