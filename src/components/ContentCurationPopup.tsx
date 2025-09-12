@@ -59,48 +59,49 @@ const getArticlesByInterest = async (selectedInterest: string): Promise<Article[
   try {
     console.log(`Fetching articles for interest: ${selectedInterest}`);
     
-    // Fetch all articles from your backend
-    const response = await fetch(`${API_BASE_URL}/api/articles`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Step 1: Get the specific article IDs from n8n webhook
+    const idsResponse = await fetch(
+      `https://n8n-service-bmex.onrender.com/webhook-test/subscribe`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    if (!idsResponse.ok) {
+      throw new Error(`N8N webhook error! status: ${idsResponse.status}`);
     }
-    
-    const data = await response.json();
-    
-    if (!data.success || !Array.isArray(data.articles)) {
-      console.log("No articles found or invalid response:", data);
-      return [];
+
+    const rawResponse = await idsResponse.json();
+    const responseData = Array.isArray(rawResponse) ? rawResponse[0] : rawResponse;
+    const articleIds = responseData?.data?.response || [];
+
+    if (responseData?.status !== "ok" || !Array.isArray(articleIds) || articleIds.length === 0) {
+      console.log("No specific article IDs found from webhook");
+      return []; // Return empty array if no IDs
     }
-    
-    console.log(`Found ${data.articles.length} total articles`);
-    
-    // Filter articles by category/interest (case-insensitive)
-    const filteredArticles = data.articles.filter((article: Article) => {
-      const articleCategory = article.category?.toLowerCase() || '';
-      const interestLower = selectedInterest.toLowerCase();
-      
-      // Check if category matches or contains the interest
-      return articleCategory.includes(interestLower) || 
-             interestLower.includes(articleCategory) ||
-             article.title?.toLowerCase().includes(interestLower) ||
-             article.preview?.toLowerCase().includes(interestLower);
-    });
-    
-    console.log(`Filtered to ${filteredArticles.length} articles for "${selectedInterest}"`);
-    
-    // If no exact matches, return recent articles from all categories
-    if (filteredArticles.length === 0) {
-      console.log("No category matches found, returning recent articles");
-      return data.articles.slice(0, 6); // Return 6 most recent
+
+    console.log(`Got ${articleIds.length} specific article IDs from webhook:`, articleIds);
+
+    // Step 2: Use your existing backend endpoint to get articles by these specific IDs
+    const articlesResponse = await fetch(
+      `${API_BASE_URL}/api/articles/by-ids?ids=${articleIds.join(',')}`
+    );
+
+    if (articlesResponse.ok) {
+      const data = await articlesResponse.json();
+      if (data.success && data.articles.length > 0) {
+        console.log(`Found ${data.articles.length} articles matching the specific IDs`);
+        return data.articles.slice(0, 3); // Return max 3 articles
+      }
     }
-    
-    // Return up to 6 filtered articles
-    return filteredArticles.slice(0, 6);
+
+    console.log("No articles found matching the webhook IDs");
+    return []; // Return empty array if no matches
     
   } catch (error) {
-    console.error("Error fetching articles by interest:", error);
-    return [];
+    console.error("Error fetching articles by specific IDs:", error);
+    return []; // Return empty array on error
   }
 };
 
@@ -363,7 +364,7 @@ const ContentCurationPopup = ({
         {/* Articles Grid */}
         <div className="articles-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {loading ? (
-            Array.from({ length: 6 }).map((_, index) => (
+            Array.from({ length: 3 }).map((_, index) => (
               <div
                 key={index}
                 className="bg-card/50 border-l-4 border-primary p-6 animate-pulse"
