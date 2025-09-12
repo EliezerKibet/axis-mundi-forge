@@ -33,29 +33,28 @@ class ArticleService {
   }
 
   private transformBackendArticle(backendArticle: any): Article {
-    const content = backendArticle.content || '';
-    const excerpt = backendArticle.summary || this.createPreview(content);
-    const publishDate = backendArticle.published_date || backendArticle.created_at || new Date().toISOString();
-    
-    return {
-      id: backendArticle.id,
-      title: backendArticle.title,
-      excerpt: excerpt,
-      content: content,
-      author: backendArticle.author || 'Anonymous',
-      publishDate: backendArticle.published_date || backendArticle.created_at || new Date().toISOString(),
-      readTime: backendArticle.readTime || this.calculateReadingTime(content),
-      category: backendArticle.category || 'Technology',
-      tags: Array.isArray(backendArticle.tags) ? (backendArticle.tags as string[]) : [],
-      slug: this.createSlug(backendArticle.title),
-      featuredImage: backendArticle.featuredImage || undefined,
-      status: 'published' as const,
-      // Backwards compatibility fields
-      date: publishDate,
-      preview: excerpt,
-      readingTime: backendArticle.readingTime || this.calculateReadingTime(content),
-    };
-  }
+  const content = backendArticle.content || '';
+  const excerpt = backendArticle.summary || this.createPreview(content);
+  
+  return {
+    id: backendArticle.id,
+    title: backendArticle.title,
+    excerpt: excerpt,
+    content: content,
+    author: backendArticle.author || 'Anonymous',
+    publishDate: backendArticle.published_date || backendArticle.created_at,
+    readTime: backendArticle.reading_time || this.calculateReadingTime(content), 
+    category: backendArticle.category || 'Technology',
+    tags: Array.isArray(backendArticle.tags) ? (backendArticle.tags as string[]) : [],
+    slug: this.createSlug(backendArticle.title),
+    featuredImage: backendArticle.featuredImage || undefined,
+    status: 'published' as const,
+    // Backwards compatibility fields
+    date: backendArticle.created_at, 
+    preview: excerpt,
+    readingTime: backendArticle.reading_time || this.calculateReadingTime(content), 
+  };
+}
 
   async getArticles(
     filters: ArticleFilters = {}
