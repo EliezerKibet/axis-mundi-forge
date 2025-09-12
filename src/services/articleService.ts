@@ -43,8 +43,8 @@ class ArticleService {
       excerpt: excerpt,
       content: content,
       author: backendArticle.author || 'Anonymous',
-      publishDate: publishDate,
-      readTime: this.calculateReadingTime(content),
+      publishDate: backendArticle.published_date || backendArticle.created_at || new Date().toISOString(),
+      readTime: backendArticle.readTime || this.calculateReadingTime(content),
       category: backendArticle.category || 'Technology',
       tags: Array.isArray(backendArticle.tags) ? (backendArticle.tags as string[]) : [],
       slug: this.createSlug(backendArticle.title),
@@ -53,7 +53,7 @@ class ArticleService {
       // Backwards compatibility fields
       date: publishDate,
       preview: excerpt,
-      readingTime: this.calculateReadingTime(content),
+      readingTime: backendArticle.readingTime || this.calculateReadingTime(content),
     };
   }
 
