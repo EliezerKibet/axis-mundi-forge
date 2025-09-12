@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Article } from "../types/article";
 import { useArticles, useFeaturedArticles } from "../hooks/useArticles";
 import { log } from "console";
-
+const API_BASE_URL = "https://axis-mundi-backend.onrender.com";
 interface ContentCurationPopupProps {
   isOpen: boolean;
   onClose: () => void;
@@ -59,7 +59,6 @@ const getArticlesByInterest = async (
   selectedInterest: string
 ): Promise<Article[]> => {
   try {
-    // Normalize the interest for consistent API calls
     const normalizeInterest = (interest: string): string => {
       if (
         interest === "Science and Technology" ||
@@ -74,14 +73,10 @@ const getArticlesByInterest = async (
 
     // Step 1: Get article IDs from n8n webhook
     const idsResponse = await fetch(
-      `https://n8n-service-bmex.onrender.com/webhook/articles-by-interest?interest=${encodeURIComponent(
-        normalizedInterest
-      )}`,
+      `https://n8n-service-bmex.onrender.com/webhook-test/subscribe`,
       {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       }
     );
 
@@ -89,14 +84,15 @@ const getArticlesByInterest = async (
       throw new Error(`HTTP error! status: ${idsResponse.status}`);
     }
 
-    const responseData = await idsResponse.json();
+    const rawResponse = await idsResponse.json();
+    const responseData = Array.isArray(rawResponse)
+      ? rawResponse[0].data
+      : rawResponse.data;
 
-    // Extract article IDs from the response object
-    const articleIds = responseData.response || [];
+    const articleIds = responseData?.response || [];
 
-    // Check if the status is ok and we have IDs
     if (
-      responseData.status !== "ok" ||
+      responseData?.status !== "ok" ||
       !Array.isArray(articleIds) ||
       articleIds.length === 0
     ) {
@@ -104,34 +100,27 @@ const getArticlesByInterest = async (
       return [];
     }
 
-    // Step 2: Fetch full article data for each ID
+    // Step 2: Fetch full article data from your backend
     const articlePromises = articleIds.slice(0, 6).map(async (id: string) => {
       try {
-        const articleResponse = await fetch(
-          `https://n8n-service-bmex.onrender.com/webhook/article/${id}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const articleResponse = await fetch(`${API_BASE_URL}/api/articles/${id}`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
 
         if (!articleResponse.ok) {
-          console.warn(
-            `Failed to fetch article ${id}: ${articleResponse.status}`
-          );
+          console.warn(`Failed to fetch article ${id}: ${articleResponse.status}`);
           return null;
         }
 
-        return await articleResponse.json();
+        const data = await articleResponse.json();
+        return data.success ? data.article : null;
       } catch (error) {
         console.warn(`Error fetching article ${id}:`, error);
         return null;
       }
     });
 
-    // Wait for all article requests and filter out failed ones
     const articles = await Promise.all(articlePromises);
     const validArticles = articles.filter(
       (article): article is Article => article !== null
@@ -144,8 +133,6 @@ const getArticlesByInterest = async (
     return validArticles;
   } catch (error) {
     console.error("Error fetching articles by interest from n8n:", error);
-
-    // Return empty array - fallback will be handled in component
     return [];
   }
 };
