@@ -219,7 +219,7 @@ app.post('/api/contact', async (req, res) => {
 
     // Forward to n8n webhook
     const n8nResponse = await fetch(
-      "https://n8n-service-bmex.onrender.com/webhook-test/Form",
+      "https://n8n-service-bmex.onrender.com/webhook/Form",
       {
         method: "POST",
         headers: {
