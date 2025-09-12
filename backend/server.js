@@ -11,6 +11,18 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
+//Shared subject to send data for webhook2 and webhook3
+function formatForN8n(data) {
+  return {
+    Name: data.name,
+    Email: data.email,
+    Subject: data.subject,
+    Message: data.message,
+    Interest: data.interest,
+    timestamp: new Date().toISOString()
+  };
+}
+
 // Articles directory path
 const ARTICLES_DIR = path.join(__dirname, 'articles');
 
@@ -187,7 +199,7 @@ app.post('/api/articles', async (req, res) => {
   }
 });
 
-//Webhook2
+//Webhook 2 contact form submission
 app.post('/api/contact', async (req, res) => {
   try {
     const { name, email, subject, message, interest } = req.body;
@@ -202,12 +214,7 @@ app.post('/api/contact', async (req, res) => {
 
     // Prepare data for n8n webhook (matching the expected format)
     const formDataObj = {
-      Name: name,        
-      Email: email,        
-      Subject: subject,
-      Message: message,
-      Interest: interest, 
-      timestamp: new Date().toISOString()
+      ...formatForN8n({ name, email, subject, message, interest })
     };
 
     // Forward to n8n webhook
@@ -259,6 +266,78 @@ app.post('/api/contact', async (req, res) => {
 
   } catch (error) {
     console.error("❌ Contact form submission failed:", error);
+    res.status(500).json({
+      success: false,
+      error: 'Network error occurred'
+    });
+  }
+});
+
+//Webhook 3 webhook susbscribe
+app.post('/api/subscribe', async (req, res) => {
+  try {
+    const { name, email, interest, subscribed } = req.body;
+    
+    // Basic validation
+    if (!name || !email || !interest || typeof subscribed !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: 'Name, email, interest, and subscribed status are required'
+      });
+    }
+
+    // Prepare data for n8n subscription webhook (matching expected format)
+    const subscriptionData = {
+      ...formatForN8n({name, email, interest }), 
+      Subscribed: subscribed
+    };
+
+    // Forward to n8n subscription webhook
+    const n8nResponse = await fetch(
+      "https://n8n-service-bmex.onrender.com/webhook-test/subscribe",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Basic YWRtaW46YWRtaW4=",
+          "cors": "true"
+        },
+        body: JSON.stringify(subscriptionData),
+      }
+    );
+
+    if (n8nResponse.ok) {
+      const webhookResult = await n8nResponse.json();
+      
+      console.log("✅ Subscription webhook sent successfully:", {
+        timestamp: new Date().toISOString(),
+        subscriptionData: subscriptionData,
+        n8nStatus: n8nResponse.status,
+        webhookResponse: webhookResult
+      });
+
+      // Return response based on n8n webhook result
+      res.json({
+        success: true,
+        message: `Subscription ${subscribed ? 'confirmed' : 'declined'} successfully`,
+        subscribed: subscribed,
+        userData: {
+          name: name,
+          email: email,
+          interest: interest
+        },
+        webhookResult: webhookResult
+      });
+    } else {
+      console.error("❌ n8n subscription webhook failed:", n8nResponse.status);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to process subscription'
+      });
+    }
+
+  } catch (error) {
+    console.error("❌ Subscription webhook failed:", error);
     res.status(500).json({
       success: false,
       error: 'Network error occurred'

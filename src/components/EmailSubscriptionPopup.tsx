@@ -21,30 +21,34 @@ const EmailSubscriptionPopup = ({
     if (!userData) return;
 
     try {
-      const webhookResponse = await fetch(
-        "https://n8n-service-bmex.onrender.com/webhook-test/subscribe",
+      const response = await fetch(
+        "https://axis-mundi-backend.onrender.com/api/subscribe", 
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": "Basic YWRtaW46YWRtaW4=",
-            "cors": "true"
           },
           body: JSON.stringify({
             name: userData.name,
             email: userData.email,
             interest: userData.interest,
-            subscribed: subscribed, 
+            subscribed: subscribed,
           }),
         }
       );
 
-      if (webhookResponse.ok) {
-        //have look at response
-        console.log("Subscription webhook sent successfully");
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        console.log("✅ Subscription webhook sent successfully:", result);
+        
+        // You can handle the response here if needed
+        // For example, show a success message or update UI state
+      } else {
+        console.error("❌ Subscription webhook failed:", result.error);
       }
     } catch (error) {
-      console.error("Subscription webhook failed:", error);
+      console.error("❌ Subscription webhook network error:", error);
     }
   };
 
