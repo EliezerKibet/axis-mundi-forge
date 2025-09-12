@@ -251,7 +251,7 @@ const Blog = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-primary" />
-                        <span>{post.publishReadingTime}</span>
+                        <span>{post.readingTime}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-primary" />
