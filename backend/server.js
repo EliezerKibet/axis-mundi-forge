@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public')); // for serving static files
+app.use(express.static('public'));
 
 // Articles directory path
 const ARTICLES_DIR = path.join(__dirname, 'articles');
@@ -216,6 +216,7 @@ app.delete('/api/articles/all', async (req, res) => {
     });
   }
 });
+
 // Delete article (optional)
 app.delete('/api/articles/:id', async (req, res) => {
   try {

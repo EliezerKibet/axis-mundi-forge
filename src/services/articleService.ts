@@ -42,7 +42,7 @@ class ArticleService {
     excerpt: excerpt,
     content: content,
     author: backendArticle.author || 'Anonymous',
-    publishDate: backendArticle.published_date || backendArticle.created_at,
+    publishDate: backendArticle.published_date ,
     readTime: backendArticle.reading_time || this.calculateReadingTime(content), 
     category: backendArticle.category || 'Technology',
     tags: Array.isArray(backendArticle.tags) ? (backendArticle.tags as string[]) : [],

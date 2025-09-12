@@ -240,7 +240,7 @@ const Blog = () => {
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-primary" />
                         <time className="text-primary tracking-widest">
-                          {new Date(post.date)
+                          {new Date(post.publishDate)
                             .toLocaleDateString("en-US", {
                               year: "numeric",
                               month: "short",
@@ -251,7 +251,7 @@ const Blog = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-primary" />
-                        <span>{post.readingTime}</span>
+                        <span>{post.publishReadingTime}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-primary" />
