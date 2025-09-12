@@ -54,7 +54,7 @@ const Contact = () => {
 
     try {
       const response = await fetch(
-        "https://axis-mundi-backend.onrender.com/api/contact", 
+        "https://axis-mundi-backend.onrender.com/api/contact",
         {
           method: "POST",
           headers: {
@@ -71,11 +71,14 @@ const Contact = () => {
         
         console.log("✅ Contact form submitted successfully:", result);
 
-        setUserData(result.userData);
-        setSelectedInterest(formData.interest || "");
+        // Use the recommended data from n8n response
+        const userData = result.recommended || result.userData;
+        setUserData(userData);
+        setSelectedInterest(userData.interest || "");
 
-        if (formData.interest) {
-          await sendWebhookResponse(result.userData);
+        // Show popup if n8n says to
+        if (result.showSubscribePrompt) {
+          await sendWebhookResponse(userData);
         }
 
         setFormData({
@@ -100,7 +103,7 @@ const Contact = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   const sendWebhookResponse = async (userData: any) => {
     setShowEmailPopup(true);
   };

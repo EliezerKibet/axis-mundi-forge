@@ -200,13 +200,13 @@ app.post('/api/contact', async (req, res) => {
       });
     }
 
-    // Prepare data for n8n webhook
+    // Prepare data for n8n webhook (matching the expected format)
     const formDataObj = {
-      name: name,
-      email: email,
-      subject: subject,
-      message: message,
-      interest: interest,
+      Name: name,        
+      Email: email,        
+      Subject: subject,
+      Message: message,
+      Interest: interest, 
       timestamp: new Date().toISOString()
     };
 
@@ -223,16 +223,27 @@ app.post('/api/contact', async (req, res) => {
     );
 
     if (n8nResponse.ok) {
+      const webhookResult = await n8nResponse.json();
+      
       console.log("✅ Contact form submitted successfully:", {
         timestamp: new Date().toISOString(),
         formData: formDataObj,
-        n8nStatus: n8nResponse.status
+        n8nStatus: n8nResponse.status,
+        webhookResponse: webhookResult
       });
 
+      // Return response based on n8n webhook result
       res.json({
         success: true,
         message: 'Contact form submitted successfully',
+        status: webhookResult.status || 'ok',
+        showSubscribePrompt: webhookResult.showSubscribePrompt || true,
         userData: {
+          name: name,
+          email: email,
+          interest: interest
+        },
+        recommended: webhookResult.recommended || {
           name: name,
           email: email,
           interest: interest
