@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React,{ useState } from "react";
 import { Button } from "@/components/ui/button-variants";
 import {
   Select,
@@ -65,10 +65,9 @@ const Contact = () => {
       );
 
       if (response.ok) {
-        // Remove transmitting text and add success message
+
         setResult("");
 
-        // Console log for developer verification
         console.log("✅ Contact form submitted successfully:", {
           timestamp: new Date().toISOString(),
           formData: formDataObj,
