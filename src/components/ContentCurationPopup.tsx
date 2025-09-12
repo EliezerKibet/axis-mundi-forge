@@ -59,18 +59,6 @@ const getArticlesByInterest = async (
   selectedInterest: string
 ): Promise<Article[]> => {
   try {
-    const normalizeInterest = (interest: string): string => {
-      if (
-        interest === "Science and Technology" ||
-        interest === "Science & Technology"
-      ) {
-        return "Science & Technology";
-      }
-      return interest;
-    };
-
-    const normalizedInterest = normalizeInterest(selectedInterest);
-
     // Step 1: Get article IDs from n8n webhook
     const idsResponse = await fetch(
       `https://n8n-service-bmex.onrender.com/webhook-test/subscribe`,
@@ -84,12 +72,9 @@ const getArticlesByInterest = async (
       throw new Error(`HTTP error! status: ${idsResponse.status}`);
     }
 
-    const rawResponse = await idsResponse.json();
-    const responseData = Array.isArray(rawResponse)
-      ? rawResponse[0].data
-      : rawResponse.data;
-
-    const articleIds = responseData?.response || [];
+    const rawResponse = await idsResponse.json(); // Add this missing line
+    const responseData = Array.isArray(rawResponse) ? rawResponse[0] : rawResponse;
+    const articleIds = responseData?.data?.response || [];
 
     if (
       responseData?.status !== "ok" ||
@@ -100,123 +85,23 @@ const getArticlesByInterest = async (
       return [];
     }
 
-    // Step 2: Fetch full article data from your backend
-    const articlePromises = articleIds.slice(0, 6).map(async (id: string) => {
-      try {
-        const articleResponse = await fetch(`${API_BASE_URL}/api/articles/${id}`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
-
-        if (!articleResponse.ok) {
-          console.warn(`Failed to fetch article ${id}: ${articleResponse.status}`);
-          return null;
-        }
-
-        const data = await articleResponse.json();
-        return data.success ? data.article : null;
-      } catch (error) {
-        console.warn(`Error fetching article ${id}:`, error);
-        return null;
-      }
-    });
-
-    const articles = await Promise.all(articlePromises);
-    const validArticles = articles.filter(
-      (article): article is Article => article !== null
+    // Step 2: Use new backend endpoint instead of individual fetches
+    const articlesResponse = await fetch(
+      `${API_BASE_URL}/api/articles/by-ids?ids=${articleIds.slice(0, 6).join(',')}`
     );
 
-    console.log(
-      `Fetched ${validArticles.length} articles for interest: ${selectedInterest}`
-    );
+    if (articlesResponse.ok) {
+      const data = await articlesResponse.json();
+      return data.success ? data.articles : [];
+    }
 
-    return validArticles;
+    return [];
   } catch (error) {
     console.error("Error fetching articles by interest from n8n:", error);
     return [];
   }
 };
 
-// Updated local filtering function as fallback
-const getArticlesByInterestLocal = (
-  selectedInterest: string,
-  availableArticles: Article[]
-): Article[] => {
-  if (availableArticles.length === 0) return [];
-
-  // Normalize function to treat both science category variations as the same
-  const normalizeCategory = (category: string): string => {
-    if (
-      category === "Science and Technology" ||
-      category === "Science & Technology"
-    ) {
-      return "Science & Technology";
-    }
-    return category;
-  };
-
-  // Updated mapping with normalized categories
-  const interestToCategory: { [key: string]: string[] } = {
-    Technology: ["Technology", "Science & Technology"],
-    "Science & Technology": ["Science & Technology", "Technology"],
-    "Science and Technology": ["Science & Technology", "Technology"],
-    "Artificial Intelligence": [
-      "Artificial Intelligence",
-      "Technology",
-      "Science & Technology",
-    ],
-    "Quantum Computing": [
-      "Quantum Computing",
-      "Technology",
-      "Science & Technology",
-    ],
-  };
-
-  const normalizedInterest = normalizeCategory(selectedInterest);
-  let relevantCategories =
-    interestToCategory[selectedInterest] ||
-    interestToCategory[normalizedInterest];
-
-  if (!relevantCategories) {
-    relevantCategories = [];
-    Object.keys(interestToCategory).forEach((category) => {
-      const normalizedCategory = normalizeCategory(category);
-      if (
-        normalizedCategory
-          .toLowerCase()
-          .includes(normalizedInterest.toLowerCase()) ||
-        normalizedInterest
-          .toLowerCase()
-          .includes(normalizedCategory.toLowerCase())
-      ) {
-        relevantCategories.push(...interestToCategory[category]);
-      }
-    });
-  }
-
-  if (relevantCategories.length === 0) {
-    return availableArticles.slice(0, 6);
-  }
-
-  const filteredArticles = availableArticles.filter((article) => {
-    const normalizedArticleCategory = normalizeCategory(article.category);
-    return relevantCategories.some((cat) => {
-      const normalizedCat = normalizeCategory(cat);
-      return (
-        normalizedArticleCategory
-          .toLowerCase()
-          .includes(normalizedCat.toLowerCase()) ||
-        normalizedCat
-          .toLowerCase()
-          .includes(normalizedArticleCategory.toLowerCase())
-      );
-    });
-  });
-
-  return filteredArticles.length > 0
-    ? filteredArticles.slice(0, 6)
-    : availableArticles.slice(0, 6);
-};
 
 const formatDateOnly = (dateString: string): string => {
   try {
@@ -304,41 +189,25 @@ const ContentCurationPopup = ({
   }, [isOpen, selectedInterest]);
 
   const fetchArticlesByInterest = async () => {
-    setLoading(true);
-    setError(null);
+  setLoading(true);
+  setError(null);
 
-    try {
-      // Try to fetch from n8n first
-      const articles = await getArticlesByInterest(selectedInterest);
-
-      if (articles.length > 0) {
-        setRelevantArticles(articles);
-      } else {
-        // Fallback to local filtering if n8n returns no results
-        const localArticles = getArticlesByInterestLocal(
-          selectedInterest,
-          availableArticles
-        );
-        setRelevantArticles(localArticles);
-
-        if (localArticles.length === 0) {
-          setError("No articles found for this interest.");
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching articles:", error);
-      setError("Failed to fetch articles from server. Using local data.");
-
-      // Fallback to local filtering on error
-      const localArticles = getArticlesByInterestLocal(
-        selectedInterest,
-        availableArticles
-      );
-      setRelevantArticles(localArticles);
-    } finally {
-      setLoading(false);
+  try {
+    const articles = await getArticlesByInterest(selectedInterest);
+    
+    if (articles.length > 0) {
+      setRelevantArticles(articles);
+    } else {
+      setError("No articles found for this interest.");
     }
-  };
+  } catch (error) {
+    console.error("Error fetching articles:", error);
+    setError("Failed to fetch articles from server.");
+    setRelevantArticles([]); 
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (!isOpen) return null;
 

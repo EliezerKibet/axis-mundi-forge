@@ -345,6 +345,53 @@ app.post('/api/subscribe', async (req, res) => {
   }
 });
 
+
+// Get articles by specific IDs
+app.get('/api/articles/by-ids', async (req, res) => {
+  try {
+    const { ids } = req.query;
+    if (!ids) {
+      return res.status(400).json({
+        success: false,
+        error: 'IDs parameter required'
+      });
+    }
+    
+    const requestedIds = ids.split(',');
+    const files = await fs.readdir(ARTICLES_DIR);
+    const matchedArticles = [];
+    
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        try {
+          const filePath = path.join(ARTICLES_DIR, file);
+          const content = await fs.readFile(filePath, 'utf8');
+          const article = JSON.parse(content);
+          
+          if (requestedIds.includes(article.id)) {
+            article.filename = file;
+            matchedArticles.push(article);
+          }
+        } catch (err) {
+          console.error(`Error reading article ${file}:`, err.message);
+        }
+      }
+    }
+    
+    res.json({
+      success: true,
+      count: matchedArticles.length,
+      articles: matchedArticles
+    });
+  } catch (err) {
+    console.error('Error fetching articles by IDs:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch articles'
+    });
+  }
+});
+
 //delete all articles
 app.delete('/api/articles/all', async (req, res) => {
   try {
