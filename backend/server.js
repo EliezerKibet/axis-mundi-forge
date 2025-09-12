@@ -123,21 +123,42 @@ app.post('/api/articles', async (req, res) => {
     }
     
     const savedArticles = [];
-    
-    for (const article of articles) {
-      // Generate unique filename for each article
-      const timestamp = Date.now() + Math.random(); // Add randomness to avoid duplicates
+    const skippedArticles = [];
+
+    for (let i = 0; i < articles.length; i++) {
+      const article = articles[i];
+      
+      // Create slug for checking duplicates
       const slugTitle = article.title 
         ? article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
         : 'article';
       
-      const filename = `${Math.floor(timestamp * 1000)}-${slugTitle}.json`;
+      // Check if article already exists by looking for similar filenames
+      try {
+        const existingFiles = await fs.readdir(ARTICLES_DIR);
+        const exists = existingFiles.some(file => 
+          file.includes(slugTitle) && file.endsWith('.json')
+        );
+        
+        if (exists) {
+          console.log(`Skipping duplicate article: ${article.title}`);
+          skippedArticles.push(article.title);
+          continue; // Skip this article
+        }
+      } catch (readError) {
+        // If articles directory doesn't exist, create it
+        console.log('Articles directory not found, will be created');
+      }
+      
+      // Generate unique filename for new articles
+      const timestamp = Date.now() + (i * 1000);
+      const filename = `${timestamp}-${slugTitle}.json`;
       const filePath = path.join(ARTICLES_DIR, filename);
       
       // Add metadata
       const articleData = {
         ...article,
-        created_at: new Date().toISOString(),
+        created_at: new Date(timestamp).toISOString(),
         filename: filename,
         id: path.basename(filename, '.json')
       };
@@ -147,11 +168,13 @@ app.post('/api/articles', async (req, res) => {
       
       console.log(`Article saved: ${filename}`);
     }
-    
+
+    // Update the response to include skipped articles info
     res.status(201).json({
       success: true,
-      message: `${savedArticles.length} article(s) created successfully`,
+      message: `${savedArticles.length} new article(s) created, ${skippedArticles.length} duplicates skipped`,
       articles: savedArticles,
+      skipped: skippedArticles,
       count: savedArticles.length
     });
   } catch (err) {
@@ -164,6 +187,35 @@ app.post('/api/articles', async (req, res) => {
   }
 });
 
+
+//delete all articles
+app.delete('/api/articles/all', async (req, res) => {
+  try {
+    const files = await fs.readdir(ARTICLES_DIR);
+    let deletedCount = 0;
+    
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        await fs.unlink(path.join(ARTICLES_DIR, file));
+        deletedCount++;
+      }
+    }
+    
+    console.log(`Deleted ${deletedCount} articles`);
+    
+    res.json({
+      success: true,
+      message: `Deleted ${deletedCount} articles`,
+      count: deletedCount
+    });
+  } catch (error) {
+    console.error('Error deleting articles:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete articles'
+    });
+  }
+});
 // Delete article (optional)
 app.delete('/api/articles/:id', async (req, res) => {
   try {
