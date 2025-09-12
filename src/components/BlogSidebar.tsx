@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { useCategories, useFeaturedArticles } from "../hooks/useArticles";
-import { ARTICLE_CATEGORIES } from "../types/article";
 
 interface BlogSidebarProps {
   currentSlug?: string;
