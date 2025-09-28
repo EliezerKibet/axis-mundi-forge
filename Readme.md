@@ -43,11 +43,37 @@ This is a full-stack web application I built to showcase a cutting-edge technolo
 
 **Production Site**: [axismunditech.com](http://axismunditech.com)
 
+### 📸 Visual Showcase
+
+
+
+#### Homepage - Hero Section
+![Axis Mundi Homepage](./images/homepage-hero.png)
+*Modern hero section with compelling messaging and clear call-to-action buttons*
+
+#### Contact Page - Professional Forms
+![Contact Page](./images/contact-page.png)
+*Sleek contact form with structured information layout and professional styling*
+
+#### Projects Portfolio
+![Featured Projects](./images/featured-projects.png)
+*Showcase of featured projects with detailed descriptions and technical achievements*
+
+#### About Section - Company Stats
+![About Section](./images/about-section.png)
+*Professional statistics display and core competencies overview*
+
+
+
+### 🎯 Key User Experience Features
+
 Experience the live application featuring:
-- Responsive design across all devices
-- Smooth animations and transitions
-- Fast loading times and optimized performance
-- Professional UI/UX design
+- **Responsive Design**: Seamless experience across all devices and screen sizes
+- **Modern UI/UX**: Clean, professional interface with intuitive navigation
+- **Smooth Animations**: Subtle transitions and hover effects for enhanced interactivity
+- **Fast Loading**: Optimized performance with sub-second load times
+- **Professional Branding**: Consistent design language throughout the application
+- **Accessibility**: WCAG 2.1 compliant with proper contrast and semantic markup
 
 ## 🏗️ Local Development
 
@@ -130,6 +156,11 @@ axis-mundi-technologies/
 │   ├── types/              # TypeScript type definitions
 │   └── App.tsx             # Main application component
 ├── public/                 # Static assets
+├── images/                 # Project screenshots
+│   ├── homepage-hero.png   # Hero section screenshot
+│   ├── contact-page.png    # Contact form screenshot
+│   ├── featured-projects.png # Projects showcase
+│   └── about-section.png   # About page screenshot
 ├── render.yaml            # Deployment configuration
 ├── tailwind.config.js     # Tailwind CSS configuration
 ├── tsconfig.json         # TypeScript configuration
@@ -195,7 +226,7 @@ The project features a custom design system built on Tailwind CSS:
 ## 📞 Contact & Links
 
 - **Live Site**: [axismunditech.com](http://axismunditech.com)
-- **Repository**: [GitHub Repository](https://github.com/EliezerKibet/axis-mundi-forge) 
+- **Repository**: [GitHub Repository](#) <!-- Add your GitHub URL -->
 - **Portfolio**: [Your Portfolio](#) <!-- Add your portfolio URL -->
 
 ---
