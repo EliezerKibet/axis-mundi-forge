@@ -4,3 +4,4 @@ node_modules/
 .DS_Store
 articles/*.json
 !articles/.gitkeep
+server.js
